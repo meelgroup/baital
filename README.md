@@ -75,7 +75,7 @@ would generate 1000 samples for embtoolkit.cnf with strategy 2 and store them in
 The execution consists of three steps:
 
 1. Generate a set of satisfiable feature combinations for a given CNF formula. The results are stored in *cnf_file*_*x*.comb file used in strategy 1 and in the final computation of coverage. If the file have been generated during previous executions, it can be reused with `--combinations` option avoiding recomputation of this step. Option `--no-combinations` allows to skip this step.\
-1'. Compute the number of models for each literal for strategy 3. The results are stored in *cnf_file*.count
+1'. Strategy 3 also computes the number of models for each literal during this step. The results are stored in *cnf_file*.count
 2. Generate a set of samples for a given CNF formula using a specified strategy. The results are stored in *outputfile*.
 3. Compute the number of covered feature combintaions and coverage. The result is stored in *outputfile*.txt
 
