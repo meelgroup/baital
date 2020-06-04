@@ -6,7 +6,7 @@ The tool takes a set of constaints on features of the configurable system repres
 
 ## System Requirements
 
-Linux OS with Python 3.6 or higher and pip3. For large benchmarks 12Gb of RAM is needed. 
+Linux OS with Python 3.6 or higher and pip3. For large benchmarks in our set up to 12Gb of RAM is required. 
 
 The tool was tested on: Ubuntu 18.10, Python 3.6.9
 
