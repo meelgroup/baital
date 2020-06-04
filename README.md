@@ -58,23 +58,23 @@ In *outputdir*, the following files are generated:
     
 ### Examples of use:
 
-`python3 baital.py ../benchmarks/axtls.cnf --strategy 1 --twise 2 --samples 1000` 
+`python3 baital.py ../benchmarks/axtls.cnf --strategy 1 --twise 2 --samples 1000` \
 would generate 1000 samples for axtls.cnf with strategy 1 and store them in `../results/axtls.samples`. Resulted t-wise coverage can be found in console output and in `../results/axtls.samples.txt`
 
-`python3 baital.py ../benchmarks/axtls.cnf --strategy 4 --twise 2 --samples 1000 --combintations ../results/axtls_2.comb --outputfile axtls_strategy4.samples` 
+`python3 baital.py ../benchmarks/axtls.cnf --strategy 4 --twise 2 --samples 1000 --combintations ../results/axtls_2.comb --outputfile axtls_strategy4.samples` \
 would generate another 1000 samples for axtls.cnf with strategy 4 and store them in `../results/axtls_strategy4.samples`. `--combinations` option allows to reuse precomputed list of satisfiable feature combinations.
 
-`python3 baital.py ../benchmarks/financial.cnf --strategy 1 --twise 2 --samples 1000 --rounds 20` 
+`python3 baital.py ../benchmarks/financial.cnf --strategy 1 --twise 2 --samples 1000 --rounds 20` \
 would generate 1000 samples for financial.cnf with strategy 1 and store them in `../results/financial.samples`. `--rounds` option controls how often weights are regenerated. In this example weights are regenerated after each 1000/20 = 50 samples. 
 
-`python3 baital.py ../benchmarks/embtoolkit.cnf --strategy 2 --twise 2 --samples 1000 --no-combinations`
+`python3 baital.py ../benchmarks/embtoolkit.cnf --strategy 2 --twise 2 --samples 1000 --no-combinations`\
 would generate 1000 samples for embtoolkit.cnf with strategy 2 and store them in `../results/embtoolkit.samples`. `--no-combinations` option skips the first step of computation and does not generate `.comb` files. In this case only `Number of combinations` is reported.
 
 ### Execution Process
 
 The execution consists of three steps:
 
-1. Generate a set of satisfiable feature combinations for a given CNF formula. The results are stored in *cnf_file*_*x*.comb file used in strategy 1 and in the final computation of coverage. If the file have been generated during previous executions, it can be reused with `--combinations` option avoiding recomputation of this step. Option `--no-combinations` allows to skip this step.
+1. Generate a set of satisfiable feature combinations for a given CNF formula. The results are stored in *cnf_file*_*x*.comb file used in strategy 1 and in the final computation of coverage. If the file have been generated during previous executions, it can be reused with `--combinations` option avoiding recomputation of this step. Option `--no-combinations` allows to skip this step.\
 1'. Compute the number of models for each literal for strategy 3. The results are stored in *cnf_file*.count
 2. Generate a set of samples for a given CNF formula using a specified strategy. The results are stored in *outputfile*.
 3. Compute the number of covered feature combintaions and coverage. The result is stored in *outputfile*.txt
