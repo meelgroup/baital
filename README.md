@@ -4,6 +4,8 @@ Baital is an implementation for the work `Baital: An Adaptive Weighted Sampling 
 
 The tool takes a set of constaints on features of the configurable system represented as a CNF formula in Dimacs format and provides a set of configurations of a specified size and computes their t-wise coverage.
 
+[![DOI](https://zenodo.org/badge/269304252.svg)](https://zenodo.org/badge/latestdoi/269304252)
+
 ## System Requirements
 
 Linux OS with Python 3.6 or higher and pip3. For large benchmarks in our set up to 12Gb of RAM is required. 
