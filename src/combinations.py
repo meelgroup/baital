@@ -107,7 +107,7 @@ def modelCount(nVars, cnfFile, outputFile):
         tcf.writelines(lines)
         tcf.write(str(literals[i]) + ' 0\n')
         tcf.close()
-        cmd = "./bin/d4 " + tmpCnfFile + ' -mc > ' + tmpFile + ' 2>&1'
+        cmd = "./bin/d4 " + tmpCnfFile + ' -dDNNF > ' + tmpFile + ' 2>&1'
         os.system(cmd)
         out = open(tmpFile)
         outlines = out.readlines()
