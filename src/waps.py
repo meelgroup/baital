@@ -472,8 +472,12 @@ class sampler2():
                     maxlabel = max([maxlabel] + [int(x) for x in node[2 : -1]])
                 else:
                     toplevelnode = self.treenodes[nodemap[tonode][1]]
-                if fromnode == 1: #root node, not in list 
-                    continue # not creating if no labels on the edge, otherwise, andnode is created above
+                if fromnode == 1: #root node, not in list. MUST CREATE a node to guarantee to be in the end of treenodes list
+                    newnode = Node(label= 'A ' + str(nodelen))
+                    newnode.children = [toplevelnode]
+                    self.treenodes.append(newnode)
+                    nodemap.update({fromnode: ('a', nodelen)})
+                    nodelen+=1
                 else:
                     fromnodetype,fromnodeval = nodemap[fromnode]
                     if fromnodeval != 0:
