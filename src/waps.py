@@ -469,7 +469,7 @@ class sampler2():
                     self.treenodes.append(andnode)
                     nodelen +=1
                     toplevelnode = andnode
-                    maxlabel = max([maxlabel] + [int(x) for x in node[2 : -1]])
+                    maxlabel = max([maxlabel] + [abs(int(x)) for x in node[2 : -1]])
                 else:
                     toplevelnode = self.treenodes[nodemap[tonode][1]]
                 if fromnode == 1: #root node, not in list. MUST CREATE a node to guarantee to be in the end of treenodes list
