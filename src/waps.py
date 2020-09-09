@@ -597,9 +597,10 @@ def sample(totalsamples, dDNNFarg, DIMACSCNF, loadPickle, weightFile=None, outpu
             if(sampler.isSamplingSetPresent):
                 cmd = "/usr/bin/time -o "+ "/tmp/" + inputFile.split("/")[-1]+".timeout "+ "--verbose ./bin/Dsharp_PCompile -cs 2000 -pvarsfile "+ "/tmp/" + inputFile.split("/")[-1]+".pvars" +" -Fnnf " + dDNNF + " /tmp/" + inputFile.split("/")[-1]+".tmp" 
             else:
-                setSeed = '-rnd-seed=' + str(seed) if seed!=None else ''
-                cmd = "/usr/bin/time -o "+ "/tmp/" + inputFile.split("/")[-1]+".timeout "+ "--verbose ./bin/d4 /tmp/" + inputFile.split("/")[-1] + ".tmp " + " -dDNNF -out=" + dDNNF + ' ' + setSeed
-                useNewParser = True
+                cmd = "/usr/bin/time -o "+ "/tmp/" + inputFile.split("/")[-1]+".timeout "+ "--verbose ./bin/d4 /tmp/" + inputFile.split("/")[-1] + ".tmp " + " -out=" + dDNNF
+                #setSeed = '-rnd-seed=' + str(seed) if seed!=None else ''
+                #cmd = "/usr/bin/time -o "+ "/tmp/" + inputFile.split("/")[-1]+".timeout "+ "--verbose ./bin/d4 /tmp/" + inputFile.split("/")[-1] + ".tmp " + " -dDNNF -out=" + dDNNF + ' ' + setSeed
+                useNewParser = False
             start = time.time()
             if(os.system(cmd)):
                 raise Exception("D4/Dsharp_PCompile not found")

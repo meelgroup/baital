@@ -206,6 +206,7 @@ def loadModelCount(combinationsFile):
 def run(samples, rounds, DIMACSCNF, outputFile, twise, combinationsFile, funcNumber=2, seed=None):
     tmpSampleFile = 'samples_temp.txt'
     pickleFile = 'saved.pickle'
+    isdDNNF = DIMACSCNF.endswith('.cnf.nnf') 
     if os.path.exists(tmpSampleFile):
         os.remove(tmpSampleFile)
     output = open(outputFile, 'w+')
@@ -217,7 +218,10 @@ def run(samples, rounds, DIMACSCNF, outputFile, twise, combinationsFile, funcNum
     nvars = 0
     with open(DIMACSCNF) as cnfFile:
         for line in cnfFile.readlines():
-            if line.startswith('p'):
+            if isdDNNF and line.startswith('nnf'):
+                nvars = int(line.split(' ')[3].strip())
+                break
+            elif (not isdDNNF) and line.startswith('p'):
                 nvars = int(line.split(' ')[2].strip())
                 break
     if twise == 0 and combinationsFile: #Strategy 3
@@ -242,7 +246,9 @@ def run(samples, rounds, DIMACSCNF, outputFile, twise, combinationsFile, funcNum
         print("Round "  + str(roundN+1) + ' started...')
         round_start = time.time()
         weightFile = weightFilePref + str(roundN+1)  + '.txt'
-        if roundN == 0:
+        if roundN == 0 and isdDNNF:
+            waps.sample(samples, DIMACSCNF, '', None, weightFile, tmpSampleFile, pickleFile, 1, None, None, None, seed)
+        elif roundN == 0:
             waps.sample(samples, '', DIMACSCNF, None, weightFile, tmpSampleFile, pickleFile, 1, None, None, None, seed)
         else:
             waps.sample(samples, '', '', pickleFile, weightFile, tmpSampleFile, None, 1, None, None, None, seed)
@@ -284,8 +290,8 @@ def main():
     parser.add_argument("--samples-per-round", type=int, default = 50, help="number of samples per round", dest='samples')
     parser.add_argument("--rounds", type=int, default=20, help="number of rounds to take samples", dest='rounds')
     parser.add_argument("--combinations", type=str, default='', help="file with satisfiable feature combinations for strategy 1 or number of models with each literal for strategy 3", dest="combinationsFile")
-    parser.add_argument("--seed", type=int, default=None, help="random seed", dest="seed")
-    parser.add_argument('DIMACSCNF', nargs='?', type=str, default="", help='input cnf file')
+    parser.add_argument("--seed", type=int, default=None, help="random seed. Important! For repeatability use dDNNF file as an input (will be generated during the first run)", dest="seed")
+    parser.add_argument('DIMACSCNF', nargs='?', type=str, default="", help='input cnf file or dDNNF file (*.cnf.nnf)')
     args = parser.parse_args()
     if args.DIMACSCNF is '':
         parser.print_usage()
