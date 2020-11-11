@@ -1,6 +1,6 @@
 # Baital
 
-Baital is a sampler generator for configurable systems that generates a set of testing samples for large configurable systems with high t-wise coverage. The tool takes a set of constaints on features of the configurable system represented as a CNF formula in Dimacs format and provides a set of configurations of a specified size and computes their t-wise coverage.
+Baital is a sampler generator for configurable systems that generates a set of testing samples for large configurable systems with high t-wise coverage. The tool takes a set of constaints on features of the configurable system represented as a CNF formula in Dimacs format and provides a set of configurations of a specified size and computes their t-wise coverage. Baital is based on our [FSE-20 Paper](https://www.comp.nus.edu.sg/~meel/Papers/fse20blm.pdf) 
 
 [![DOI](https://zenodo.org/badge/269304252.svg)](https://zenodo.org/badge/latestdoi/269304252)
 
