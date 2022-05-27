@@ -1,0 +1,6 @@
+pyparsing
+gmpy2
+numpy
+pydot
+psutil
+pycosat
