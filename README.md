@@ -1,6 +1,6 @@
 # Baital
 
-Baital is a sampler generator for configurable systems that generates a set of testing samples for large configurable systems with high t-wise coverage. The tool takes a set of constaints on features of the configurable system represented as a CNF formula in Dimacs format and provides a set of configurations of a specified size and computes their t-wise coverage. In addition, the tool incorporates novel approximation techniques for the computaion of t-wise coverage. Baital is based on our [FSE-20 Paper](https://www.comp.nus.edu.sg/~meel/Papers/fse20blm.pdf).   
+Baital is a sample generator for configurable systems that generates a set of testing samples for large configurable systems with high t-wise coverage. The tool takes a set of constaints on features of the configurable system represented as a CNF formula in Dimacs format and provides a set of configurations of a specified size and computes their t-wise coverage. In addition, the tool incorporates novel approximation techniques for the computaion of t-wise coverage. Baital is based on our [FSE-20 Paper](https://www.comp.nus.edu.sg/~meel/Papers/fse20blm.pdf).   
 
 ## System Requirements
 
@@ -72,32 +72,25 @@ Run command `python3 baital.py <arguments>` from `src` folder.
 | --outputdir | str | "./results/" | Output directory |
 | --outputfile | str | "" | Output file for samples, will be placed in outputdir, default <cnf_filename>.samples |
 | --twise | int | 2 | t value for t-wise coverage |
-|-------- | ---- | ------------- | ----------- | 
 | --preprocess-file | str | "" | Precomputed file for skipping preprocessing step. Shall have .comb, or .acomb, or .count extension |
 | --preprocess-only |  |  | Only perform preprocessing |
 | --preprocess-approximate | | | Approximate computation of preprocessing |
 | --preprocess-delta | float | 0.25 | Delta for approximate counting at preprocessing. Unused if not --preprocess-approximate | 
 | --preprocess-epsilon | float | 0.25 | Epsilon for approximate counting at preprocessing. Unused if not --preprocess-approximate | 
-|-------- | ---- | ------------- | ----------- | 
 | --strategy | int | 4 | Weight generation strategy |
 | --rounds | int | 10 | Number of rounds for sample generation | 
 | --samples | int | 500 | Total number of samples to generate | 
 | --desired-coverage | float | | Samples are genereted until the desired coverage is reached or --rounds is completed. Cannot be used with --samples |
 | --samples-per-round | int | 50| Number of samples generated per round if --desired-coverage is set |
 | --weight-function | int | 2 | Function number between 1 and 7 for weight generation, used in strategies 1, 2, 5, and 6 |
-|-------- | ---- | ------------- | ----------- | 
 | --no-sampling | | | Skip sampling, use to compute the coverage of an existing test suite |
 | --samples-file | str | | File with samples to compute the coverage for --no-sampling option. Shall have .samples extension | 
-|-------- | ---- | ------------- | ----------- | 
 | --maxcov-file | str | | File with pregenerated list of satisfiable feature combinations for the step 3. Shall have .comb extension | 
 | --no-maxcov | | | Compute only the number of distinct combinations in a test suite instead of coverage |
 | --cov-approximate | | | Compute the coverage approximately |
 | --cov-delta | float | 0.05 | Delta for approximate computation of coverage. Unused if not --cov-approximate | 
 | --cov-epsilon | float | 0.05 | Epsilon for approximate computation of coverage. Unused if not --cov-approximate | 
-|-------- | ---- | ------------- | ----------- | 
 | --seed | int | | random seed |
-|-------- | ---- | ------------- | ----------- | 
-
 
 
 ## Input and Output Data
@@ -140,7 +133,7 @@ If you use our tool, please cite us with the following bibtex:
 @inproceedings{BCLMV22,
   title={A Scalable t-wise Coverage Estimator},
   author={Baranov, Eduard and Chakraborty, Sourav and Legay, Axel and Meel, Kuldeep S and Variyam, Vinodchandran N.},
-  booktitle={ICSE2022},
+  booktitle={Proc. 44th International Conference on Software Engineering (ICSE 2022)},
   year={2022}
 }
 ```
