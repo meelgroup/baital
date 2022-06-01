@@ -102,22 +102,22 @@ def weightFormula7(posN, negN, total, i):
         return 0.5
     return removeApproxError(0.5 - (MAXCOEFF * (posN /total[i] - negN /total[-i]) / (posN /total[i] + negN /total[-i])))
     
-def weightFormulatStrategy3(posN, negN, total, i):
-    if total[i] == 0:
-        return 0
-    if total[-i] == 0:
-        return 1
-    if posN == 0 and negN == 0 : 
-        return 0.5
-    posP = posN / (posN + negN) 
-    negP = math.log(total[i]) / (math.log(total[i]) + math.log(total[-i]))
-    val = (posP -negP)
-    if val >= 0:
-        return (0.5 - (MAXCOEFF * math.sqrt(val)))
-    else:
-        return 0.5 + (MAXCOEFF *math.sqrt(-val))
+#def weightFormulatStrategy3(posN, negN, total, i):
+#    if total[i] == 0:
+#        return 0
+#    if total[-i] == 0:
+#        return 1
+#    if posN == 0 and negN == 0 : 
+#        return 0.5
+#    posP = posN / (posN + negN) 
+#    negP = math.log(total[i]) / (math.log(total[i]) + math.log(total[-i]))
+#    val = (posP -negP)
+#    if val >= 0:
+#        return (0.5 - (MAXCOEFF * math.sqrt(val)))
+#    else:
+#        return 0.5 + (MAXCOEFF *math.sqrt(-val))
  
-def weightFormulaStrategy4(posN, negN):
+def weightFormulaStrategy5(posN, negN):
     if posN + negN ==0:
         return 0.5
     else: 
@@ -128,10 +128,8 @@ functionsDict = {1: weightFormula1, 2: weightFormula2, 3 : weightFormula3, 4: we
 
 
 def computeWeight(strategy, funcNumber, posN, negN, total, i):
-    if strategy == 3:
-        return weightFormulatStrategy3(posN, negN, total, i)
-    if strategy == 4:
-        return weightFormulaStrategy4(posN, negN)
+    if strategy == 5:
+        return weightFormulaStrategy5(posN, negN)
     return functionsDict[funcNumber](posN, negN, total, i)
 
 def generateWeights(count, nvars, strategy, maxComb, weightFile, roundNb, funcNumber):

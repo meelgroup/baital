@@ -36,14 +36,14 @@ TMPSAMPLEFILE = 'samples_temp.txt'
 PICKLEFILE = 'saved.pickle'
 WEIGHTFILEPREF = 'weights'
 
-# For strategies 5 and 6 a coefficient for the number of boxes. Each literal is expected to appear in APPROXCOEFF*(2**(twise-1)) boxes
+# For strategies 3 and 4 a coefficient for the number of boxes. Each literal is expected to appear in APPROXCOEFF*(2**(twise-1)) boxes
 APPROXCOEFF = 25
 
-#For --desired-coverage option and strategies 3 and 4, coverage is computed approximately with the following parameters:
+#For --desired-coverage option and strategy 5, coverage is computed approximately with the following parameters:
 DESCOVDELTA = 0.1
 DESCOVEPSILON = 0.1
 
-# For strategies 5 and 6 computes number of boxes each literal is involved
+# For strategies 3 and 4 computes number of boxes each literal is involved
 def computeNBoxesLit(varsBoxes, nvars):
     res = {var : 0 for var in [i+1 for i in range(nvars)] + [-i-1 for i in range(nvars)]}
     for box in varsBoxes.keys():
@@ -54,7 +54,7 @@ def computeNBoxesLit(varsBoxes, nvars):
             res[var] = 1
     return res
 
-# For strategies 5 and 6 estimates current coverage of each literal
+# For strategies 3 and 4 estimates current coverage of each literal
 def boxesCoveragePerLiteral(boxes, nBoxesLit, nvars, size):
     count ={var : 0 for var in [i+1 for i in range(nvars)] + [-i-1 for i in range(nvars)]}
     for comb in boxes.keys():
@@ -65,7 +65,7 @@ def boxesCoveragePerLiteral(boxes, nBoxesLit, nvars, size):
         count[var] = int(utils.cnk(nvars-2, size-1) * count[var] *(2**(size-1)) / nBoxesLit[var])
     return count
 
-# For strategies 2 and 6 maximal number of combinations is over-approximated assuming any combination possible disregarding constraints
+# For strategies 2 and 4 maximal number of combinations is over-approximated assuming any combination possible disregarding constraints
 def countMaxComb(nvars, twise):
     val = (2**(twise -1)) * utils.cnk(nvars-1, twise-1)
     res = {var : val for var in [i+1 for i in range(nvars)] + [-i-1 for i in range(nvars)]}
@@ -76,7 +76,24 @@ def getMaxCov(dimacscnf, twise, combinationsFile):
     if combinationsFile[-5:] == '.comb':
         return utils.getCoverageFromCombFile(combinationsFile)
     else:
-        return cnf_combination.run(dimacscnf, twise, 3, '', DESCOVEPSILON, DESCOVDELTA)
+        return cnf_combination.run(dimacscnf, twise, 2, '', DESCOVEPSILON, DESCOVDELTA)
+
+# Attempts to get the total number of combinations or models from .acomb files.
+def loadApproxCount(combinationsFile):
+    res = {}
+    if not os.path.exists(combinationsFile):
+        print(f"File {combinationsFile} not found.")
+        sys.exit(1)
+    with open(combinationsFile) as f:
+        lines = f.readlines()
+    try:
+        for line in lines:
+            spl = line.strip().split(' ')
+            res.update({int(spl[0]): int(spl[1])})
+        return res
+    except:
+        print(f"Wrong format of the file {combinationsFile}. Each line shall have format 'x y' where x is a literal and y is a number of models or combinations with this literal")
+        sys.exit(1)
 
 # Attempts to get the total number of combinations from the provided combinationsFile. Expected either .comb or .acomb file
 def loadMaxComb(nvars, twise, combinationsFile):
@@ -85,7 +102,7 @@ def loadMaxComb(nvars, twise, combinationsFile):
         sys.exit(1)
     if combinationsFile[-6:] == '.acomb':
         print("Warning: a file with approximate number of combinations given.")
-        return loadModelCount(combinationsFile)   ## File with approximation has similar format as with model count 
+        return loadApproxCount(combinationsFile) 
     res = {var : 0 for var in [i+1 for i in range(nvars)] + [-i-1 for i in range(nvars)]}
     with open(combinationsFile) as f:
         lines = f.readlines()
@@ -103,7 +120,8 @@ def loadMaxComb(nvars, twise, combinationsFile):
         print(f"Wrong format of the file {combinationsFile}. Each line shall contain a comma separated combination of size {twise}")
         sys.exit(1)
 
-# Attempts to get the total number of combinations or models from .acomb or .count files.
+# Attempts to get the total number of combinations or models from .count files.
+# not used anymore
 def loadModelCount(combinationsFile):
     res = {}
     if not os.path.exists(combinationsFile):
@@ -143,13 +161,13 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
                 break
     
     #Load precomputed number of combinations or models or take an upper-approximation
-    if strategy == 3: 
-        maxComb = loadModelCount(combinationsFile)
-    elif strategy == 4: 
+    #if strategy == 3: 
+    #    maxComb = loadModelCount(combinationsFile)
+    if strategy == 5: 
         maxComb = None
-    elif strategy == 1 or strategy == 5: #Strategy 1 - loading feasible combinations; could have approximate number of combinations
+    elif strategy == 1 or strategy == 3: #Strategy 1 - loading feasible combinations; could have approximate number of combinations
         maxComb = loadMaxComb(nvars, twise, combinationsFile)
-    elif strategy == 2 or strategy == 6: # take upper-approximation
+    elif strategy == 2 or strategy == 4: # take upper-approximation
         maxComb = countMaxComb(nvars, twise)
     else:
         print('Unknown strategy')
@@ -163,7 +181,7 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
     count = {var : 0 for var in [i+1 for i in range(nvars)] + [-i-1 for i in range(nvars)]}
 
     # Generation of boxes for approximate strategies
-    if strategy == 5 or strategy == 6:
+    if strategy == 3 or strategy == 4:
         nBoxes = APPROXCOEFF * (2**twise) *nvars
         varsBoxes = utils.genRandomBoxes(nvars, twise, nBoxes, allowGenerateMoreThanExists=True)
         nBoxesLit = computeNBoxesLit(varsBoxes, nvars)
@@ -190,9 +208,9 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
                 if nSamples <0 or roundN != rounds-1 or roundN * samplesperround + i < nSamples: #ignore extra samples in case of non divisible by number of rounds
                     lineParts = newSamplesLines[i].strip().split(',')
                     s = list(map(int, lineParts[1].strip().split(' ')))
-                    if strategy == 5 or strategy == 6:
+                    if strategy == 3 or strategy == 4:
                         utils.updateBoxesCoverage(varsBoxes, twise, s)
-                    elif strategy == 3 or strategy == 4:
+                    elif strategy == 5:
                             for val in s:
                                 count[val] +=1
                     elif strategy == 1 or strategy == 2:
@@ -206,8 +224,8 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
 
         os.remove(TMPSAMPLEFILE)
         
-        # Update counter for strategies 5 and 6 - done once, not after each new sample
-        if strategy == 5 or strategy == 6:
+        # Update counter for strategies 3 and 4 - done once, not after each new sample
+        if strategy == 3 or strategy == 4:
             count = boxesCoveragePerLiteral(varsBoxes, nBoxesLit, nvars, twise)
             print("Current approximation of sampled combinations " + str(sum(count.values()) / twise) )
         
@@ -218,7 +236,7 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
         
         # for --desired-coverage option check if exit condition reached
         if descoverage:
-            if strategy == 3 or strategy == 4:
+            if strategy == 5:
                 currentSample = sample_set_combinations.run(output, twise, True, DESCOVEPSILON, DESCOVDELTA)
             else:    
                 currentSample = sum(count.values()) / twise
@@ -241,10 +259,9 @@ epilog=textwrap.dedent('''\
 Strategies information: strategies define what parameter is used to select weights for the next round. The parameter is computed for each literal. The following lists the parameter for each strategy.
     Strategy 1: ratio between the number of combinations with a literal in current sample set and the number of combinations with the literal allowed by constraints of the configurable system
     Strategy 2: ratio between the number of combinations with a literal in current sample set and choice of twise distinct elements in NVariables
-    Strategy 3: ratio between the number of samples the literal appears in current sample set and the number of models involving the literal
-    Strategy 4: the number of samples the literal appears in current sample set
-    Strategy 5: ratio between the approximate number of combinations with a literal in current sample set and the number of combinations with the literal allowed by constraints of the configurable system
-    Strategy 6: ratio between the approximate number of combinations with a literal in current sample set and choice of twise distinct elements in NVariables
+    Strategy 3: ratio between the approximate number of combinations with a literal in current sample set and the number of combinations with the literal allowed by constraints of the configurable system
+    Strategy 4: ratio between the approximate number of combinations with a literal in current sample set and choice of twise distinct elements in NVariables
+    Strategy 5: the number of samples the literal appears in current sample set
     Note that the number of combinations with the literal allowed by constraints or the number of models involving the literal shall be precomputed and provided in a file with --combinations option. These precomputations can be approximate.
 ''')
 
@@ -252,8 +269,8 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, epilog=epilog)
     parser.add_argument("--outputfile", type=str, default="samples_full.txt", help="output file for samples", dest='outputfile')
     parser.add_argument("--twise", type=int, default=2, help="t value for t-wise coverage, default 2", dest='twise')
-    parser.add_argument("--strategy", type=int, default=4, choices=range(1, 7), help="Strategy, see help for description, default 4 ", dest='strategy')
-    parser.add_argument("--function", type=int, default=2, choices=range(1, 8), help="Function number between 1 and 7 for weight generation, used in strategies 1, 2, 5, and 6.", dest='funcNumber')
+    parser.add_argument("--strategy", type=int, default=5, choices=range(1, 6), help="Strategy, see help for description, default 5 ", dest='strategy')
+    parser.add_argument("--function", type=int, default=2, choices=range(1, 8), help="Function number between 1 and 7 for weight generation, used in strategies 1, 2, 3, and 4.", dest='funcNumber')
     end_cond = parser.add_mutually_exclusive_group()
     end_cond.add_argument("--samples", type=int, default=500, help="total number of samples to generate", dest='samples')
     end_cond.add_argument("--desired-coverage", type=float, help="samples are genereted until the coverage reaches the given value or --rounds is completed. Cannot be used with --samples", dest='descoverage')

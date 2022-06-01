@@ -66,6 +66,7 @@ def get_combinations(nVars, clauses, size, outputfile, combs):
     return feasibleCombs
 
 #Counts a number of models involving a literal for each literal
+# not used anymore
 def modelCount(nVars, cnfFile, outputFile):
     tmpCnfFile = 'tmp.cnf'
     tmpFile = "output.tmp"
@@ -239,20 +240,20 @@ def approxCombLiteral(nVars, clauses, twise, outputfile, tmpCNF, epsilon, delta)
     return res
     
 #-----------------------------------------------------------------------------------------------------
-###Modes: 1 - compute exact number of combinations; 2 - compute number of models per literal; 3 - compute approximate number of combinations; 4 - compute approximate number of combinations per literal
+###Modes: 1 - compute exact number of combinations;  2 - compute approximate number of combinations; 3 - compute approximate number of combinations per literal; (not used anymore)4 - compute number of models per literal;
 def run(dimacscnf, twise, mode, outputdir, epsilon, delta):
     nVars, clauses = utils.parse_cnf(dimacscnf)
     benchmarkName = os.path.basename(dimacscnf).split('.')[0]
     if mode == 2:
         start_full = time.time()
-        res = modelCount(nVars, dimacscnf, os.path.join(outputdir,  benchmarkName + '.count'))
-        print("Total time: " + str(time.time() - start_full))
-    elif mode == 3:
-        start_full = time.time()
         res = approxComb(nVars, clauses, twise, benchmarkName + '_tmp.cnf', epsilon, delta)
         print("Approximate number of combinations is " + str(res))
         print("Total time: " + str(time.time() - start_full))
-    elif mode == 4:
+#    elif mode == 4:   #not used anymore
+#        start_full = time.time()
+#        res = modelCount(nVars, dimacscnf, os.path.join(outputdir,  benchmarkName + '.count'))
+#        print("Total time: " + str(time.time() - start_full))
+    elif mode == 3:
         start_full = time.time()
         res = approxCombLiteral(nVars, clauses, twise, os.path.join(outputdir,  benchmarkName + '_' + str(twise) + '.acomb'), benchmarkName + '_tmp.cnf', epsilon, delta)
         print("Total time: " + str(time.time() - start_full))
