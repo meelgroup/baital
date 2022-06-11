@@ -87,7 +87,7 @@ def loadApproxCount(combinationsFile):
     with open(combinationsFile) as f:
         lines = f.readlines()
     try:
-        for line in lines:
+        for line in lines[1:]:
             spl = line.strip().split(' ')
             res.update({int(spl[0]): int(spl[1])})
         return res
@@ -117,7 +117,7 @@ def loadMaxComb(nvars, twise, combinationsFile):
                 res[val] +=1
         return res
     except:
-        print(f"Wrong format of the file {combinationsFile}. Each line shall contain a comma separated combination of size {twise}")
+        print(f"Exception during the processing of {combinationsFile}. Each line shall contain a comma separated combination of size {twise}. Is {combinationsFile} corresponds to the input file?")
         sys.exit(1)
 
 # Attempts to get the total number of combinations or models from .count files.
@@ -207,30 +207,32 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
             for i in range(len(newSamplesLines)):
                 if nSamples <0 or roundN != rounds-1 or roundN * samplesperround + i < nSamples: #ignore extra samples in case of non divisible by number of rounds
                     lineParts = newSamplesLines[i].strip().split(',')
-                    s = list(map(int, lineParts[1].strip().split(' ')))
-                    if strategy == 3 or strategy == 4:
-                        utils.updateBoxesCoverage(varsBoxes, twise, s)
-                    elif strategy == 5:
-                            for val in s:
-                                count[val] +=1
-                    elif strategy == 1 or strategy == 2:
-                        utils.getTuples_rec(s, twise, trie, count, [], True)
-                    else:
-                        print('Unknown strategy')
-                        sys.exit(1)
-                    # Copy samples to output file
+                    if roundN != rounds-1:
+                        s = list(map(int, lineParts[1].strip().split(' ')))
+                        if strategy == 3 or strategy == 4:
+                            utils.updateBoxesCoverage(varsBoxes, twise, s)
+                        elif strategy == 5:
+                                for val in s:
+                                    count[val] +=1
+                        elif strategy == 1 or strategy == 2:
+                            utils.getTuples_rec(s, twise, trie, count, [], True)
+                        else:
+                            print('Unknown strategy')
+                            sys.exit(1)
+                        # Copy samples to output file
                     sampleNumber = roundN * samplesperround + int(lineParts[0].strip())
                     output.write(str(sampleNumber) + ',' + lineParts[1] + '\n')
 
         os.remove(TMPSAMPLEFILE)
         
         # Update counter for strategies 3 and 4 - done once, not after each new sample
-        if strategy == 3 or strategy == 4:
-            count = boxesCoveragePerLiteral(varsBoxes, nBoxesLit, nvars, twise)
-            print("Current approximation of sampled combinations " + str(sum(count.values()) / twise) )
-        
-        # Generate weights for next round
-        weightFunctions.generateWeights(count, nvars, strategy, maxComb, WEIGHTFILEPREF, roundN+2, funcNumber)
+        if roundN != rounds-1:
+            if strategy == 3 or strategy == 4:
+                count = boxesCoveragePerLiteral(varsBoxes, nBoxesLit, nvars, twise)
+                print("Current approximation of sampled combinations " + str(sum(count.values()) / twise) )
+            
+            # Generate weights for next round
+            weightFunctions.generateWeights(count, nvars, strategy, maxComb, WEIGHTFILEPREF, roundN+2, funcNumber)
         print("The time taken by round " + str(roundN+1) + " :" +  str(time.time()-round_start))
         print("Round " + str(roundN+1) + ' finished...')
         
@@ -248,12 +250,14 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
     output.close()
 
     print("The time taken by sampling:", time.time()-start)
-
     #cleanup
     os.remove(PICKLEFILE)
-    for roundN in range(rounds+1):
-        os.remove(WEIGHTFILEPREF + str(roundN+1)  + '.txt')
+    for rn in range(roundN+1):
+        os.remove(WEIGHTFILEPREF + str(rn+1)  + '.txt')
+    if descoverage and roundN < rounds-1:
+        os.remove(WEIGHTFILEPREF + str(roundN+2)  + '.txt')
 
+    
 
 epilog=textwrap.dedent('''\
 Strategies information: strategies define what parameter is used to select weights for the next round. The parameter is computed for each literal. The following lists the parameter for each strategy.

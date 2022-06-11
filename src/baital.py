@@ -29,12 +29,14 @@ import math
 import numpy as np
 import time
 import textwrap
+import utils
+import random
 
-def runPreprocess(inputfile, twise, outputdir, benchmarkName, strategy, isApprox, epsilon, delta):
+def runPreprocess(inputfile, twise, outputdir, benchmarkName, strategy, preprocessonly, isApprox, epsilon, delta):
 #    if strategy == 3:
 #        cnf_combinations.run(inputfile, twise, 2, outputdir, epsilon, delta)
 #        combinationsFile = os.path.join(outputdir, benchmarkName + '.count')
-    if (strategy == 1 or strategy == 3):
+    if (strategy == 1 or strategy == 3 or preprocessonly):
         if isApprox:
             cnf_combinations.run(inputfile, twise, 3, outputdir, epsilon, delta)
             combinationsFile = os.path.join(outputdir, benchmarkName + '_' + str(twise) + '.acomb')
@@ -72,7 +74,7 @@ def run(dimacscnf, strategy, twise, samples, descoverage, spr, rounds, outputdir
         ptime = -1
     else:
         pstart = time.time()
-        combinationsFile = runPreprocess(dimacscnf, twise, outputdir, benchmarkName, strategy, papprx, pepsilon, pdelta)
+        combinationsFile = runPreprocess(dimacscnf, twise, outputdir, benchmarkName, strategy, preprocessonly, papprx, pepsilon, pdelta)
         ptime = time.time() - pstart if combinationsFile != '' else -1
 
     if preprocessonly:
@@ -152,7 +154,7 @@ def check_rescombfile(combinations_file, twise):
         return len(line.split(",")) == twise
 
 epilog=textwrap.dedent('''\
-The tool performs 3 steps:
+The tool executes 3 steps:
     Step 1: preprocessing. Used for strategies 1, and 3. Has 2 options that are controlled by --strategy and --preprocess-approximate options
         (i) Lists the combinations of size <twise> allowed by cnf constraints (Could take hours for twise=2, infeasible for large models for twise=3). Results could be reused at step 3. 
             Precomputed file can be provided with --preprocess-file option, expected to have .comb extension.
@@ -199,7 +201,7 @@ def main():
         
     parser.add_argument("--weight-function", type=int, default=2, choices=range(1, 8), help="Function number between 1 and 7 for weight generation, used in strategies 1, 2, 3, and 4", dest='funcNumber')
     parser.add_argument("--no-sampling", action='store_true', help="skip step 2, computes only the coverage of a provided .sample file with --samples-file", dest='nosampling')
-    parser.add_argument("--samples-file", type=str, default='', help="file with samples to compute the coverage for --no-sampling option. Shall have .samples extension", dest="outersamplefile")
+    parser.add_argument("--samples-file", type=str, default='', help="file with samples to compute the coverage for --no-sampling option. Shall have .samples extension", dest="externalsamplefile")
         
     parser.add_argument("--maxcov-file", type=str, default='', help="file with pregenerated list of satisfiable feature combinations for the step 3. Shall have .comb extension", dest="rescombfile")
     parser.add_argument("--no-maxcov", action='store_true', help="Compute only number of combinatons in samples, instead of coverage", dest='nocomb')
@@ -235,10 +237,10 @@ def main():
         print("Delta and epsilon shall be in range (0,1)")
         sys.exit(1)
     
-    if args.nosampling and not args.outersamplefile:
-        print("--args.nosampling requires file with sample provided with --samples-file")
+    if args.nosampling and not args.externalsamplefile:
+        print("--args.nosampling must be used with --samples-file")
         sys.exit(1)
-        if args.outersamplefile[-8:] != '.samples':
+        if args.externalsamplefile[-8:] != '.samples':
             print("--samples-file is expected to have '.samples' extension")
             sys.exit(1)
         #TODO verify --samples-file format
@@ -254,7 +256,7 @@ def main():
         np.random.seed(args.seed)
         random.seed(args.seed)
     
-    run(args.DIMACSCNF, args.strategy, args.twise, args.samples, args.descoverage, args.spr, args.rounds, args.outputdir, args.outputfile, args.nocomb, args.combfile, args.papprx, args.pdelta, args.pepsilon, args.funcNumber, args.rescombfile, args.nosampling, args.outersamplefile, args.apprx, args.epsilon, args.delta, args.preprocess)
+    run(args.DIMACSCNF, args.strategy, args.twise, args.samples, args.descoverage, args.spr, args.rounds, args.outputdir, args.outputfile, args.nocomb, args.combfile, args.papprx, args.pdelta, args.pepsilon, args.funcNumber, args.rescombfile, args.nosampling, args.externalsamplefile, args.apprx, args.epsilon, args.delta, args.preprocess)
 
 if __name__== "__main__":
     main()

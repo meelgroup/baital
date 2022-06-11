@@ -30,7 +30,7 @@ import random
 from pathlib import Path
 import utils
 
-
+TMPCNFSUFFIX = '_tmp.cnf'
      
 ###combs is a list of precomputed combinations of smaller sizes: combs[x] contains combinatios of size x+1             
 def get_combinations(nVars, clauses, size, outputfile, combs):
@@ -199,25 +199,28 @@ def rmfile(filename):
 
 def runApproxmc(tmpCNF, epsilon, delta):
     approxOutput='out.pmc'
-    rmfile(approxOutput)
-    
-    cmd = 'approxmc --seed ' + str(random.randint(1,10000)) + ' --epsilon ' + str(epsilon) + ' --delta ' + str(delta) + ' ' + tmpCNF + ' >' + approxOutput  
-    start = time.time()
-    os.system(cmd)
-    total_user_time = time.time() - start
-    result = -1
-    with open(approxOutput) as f:
-        for line in f:
-            if line.startswith('s mc'): #Note the version of ApproxMC
-                number= int(line.strip().split(' ')[2].strip())
-                result = number
-                break
-    return result
-    
+    try:
+        cmd = 'approxmc --seed ' + str(random.randint(1,10000)) + ' --epsilon ' + str(epsilon) + ' --delta ' + str(delta) + ' ' + tmpCNF + ' >' + approxOutput  
+        start = time.time()
+        os.system(cmd)
+        total_user_time = time.time() - start
+        result = -1
+        with open(approxOutput) as f:
+            for line in f:
+                if line.startswith('s mc'): #Note the version of ApproxMC
+                    number= int(line.strip().split(' ')[2].strip())
+                    result = number
+                    break
+        os.remove(approxOutput)
+        return result
+    except:
+        print(f"Approxmc call failed.")
+        sys.exit(1)
 
 def approxComb(nVars, clauses, twise, tmpCNF, epsilon, delta):
     generateGFCNF(nVars, clauses, twise, tmpCNF)
     result = runApproxmc(tmpCNF, epsilon, delta)
+    os.remove(tmpCNF)
     return result
     
 def approxCombLiteral(nVars, clauses, twise, outputfile, tmpCNF, epsilon, delta):
@@ -237,6 +240,7 @@ def approxCombLiteral(nVars, clauses, twise, outputfile, tmpCNF, epsilon, delta)
         f.write(str(twise)+ '\n')
         for key in res.keys():
             f.write(str(key) + ' ' + str(res[key]) + '\n')
+    os.remove(tmpCNF)
     return res
     
 #-----------------------------------------------------------------------------------------------------
@@ -246,7 +250,7 @@ def run(dimacscnf, twise, mode, outputdir, epsilon, delta):
     benchmarkName = os.path.basename(dimacscnf).split('.')[0]
     if mode == 2:
         start_full = time.time()
-        res = approxComb(nVars, clauses, twise, benchmarkName + '_tmp.cnf', epsilon, delta)
+        res = approxComb(nVars, clauses, twise, benchmarkName + TMPCNFSUFFIX, epsilon, delta)
         print("Approximate number of combinations is " + str(res))
         print("Total time: " + str(time.time() - start_full))
 #    elif mode == 4:   #not used anymore
@@ -255,7 +259,7 @@ def run(dimacscnf, twise, mode, outputdir, epsilon, delta):
 #        print("Total time: " + str(time.time() - start_full))
     elif mode == 3:
         start_full = time.time()
-        res = approxCombLiteral(nVars, clauses, twise, os.path.join(outputdir,  benchmarkName + '_' + str(twise) + '.acomb'), benchmarkName + '_tmp.cnf', epsilon, delta)
+        res = approxCombLiteral(nVars, clauses, twise, os.path.join(outputdir,  benchmarkName + '_' + str(twise) + '.acomb'), benchmarkName + TMPCNFSUFFIX, epsilon, delta)
         print("Total time: " + str(time.time() - start_full))
     elif mode == 1:
         combs = []   
@@ -278,9 +282,9 @@ if __name__ == "__main__":
     parser.add_argument('DIMACSCNF', nargs='?', type=str, default="", help='input cnf file in dimacs format')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--combinations', action='store_true', help="counts number of combinations, this is the default mode", dest='m1')
-    mode.add_argument('--model-count', action='store_true', help="counts number of models for each literal", dest='m2')
-    mode.add_argument('--approximate', action='store_true', help="counts approximate number of combinations", dest='m3')
-    mode.add_argument('--approximate-literal', action='store_true', help="counts approximate number of combinations for each literal", dest='m4')
+    #mode.add_argument('--model-count', action='store_true', help="counts number of models for each literal", dest='m4')
+    mode.add_argument('--approximate', action='store_true', help="counts approximate number of combinations", dest='m2')
+    mode.add_argument('--approximate-literal', action='store_true', help="counts approximate number of combinations for each literal", dest='m3')
     parser.add_argument("--delta", type=float, default=0.05, help="Delta for approximate counting", dest='delta')
     parser.add_argument("--epsilon", type=float, default=0.05, help="Epsilon for approximate counting", dest='epsilon')
     parser.add_argument("--seed", type=int, help="Random seed. Unused if approximate is not selected", dest='seed')
@@ -297,8 +301,8 @@ if __name__ == "__main__":
         mode = 2
     elif args.m3:
         mode =3 
-    elif args.m4:
-        mode =4
+    #elif args.m4:
+    #    mode =4
     
     Path(args.outputdir).mkdir(parents=True, exist_ok=True)
     run(args.DIMACSCNF, args.size, mode, args.outputdir, args.epsilon, args.delta)
