@@ -19,6 +19,15 @@ Tested on: Ubuntu 18.10, 20.04 and Debian 11.
 
 *Tested on revisions 30c6787 of approxmc and 641f915 of cryptominisat.  
 
+### Docker image
+
+An alternative for installation is to build a docker image with:  
+`docker build ./ -t baital`  
+  
+In order to perform sampling using docker, container inputs and outputs has to be passed via volumes. The run command shall be:  
+`docker run -v /path/to/inputfile:/baital/src/inputfile -v /path/to/output/results/:/baital/src/results/ baital inputfile`  
+Other arguments can be passed as usual; note that all files in the arguments must be injected with volumes.   
+
 
 ## Benchmarks
 
