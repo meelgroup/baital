@@ -15,7 +15,7 @@ Tested on: Ubuntu 18.10, 20.04 and Debian 11.
     - `pip3 install -r requirements.txt`  
 3. Install [ApproxMC4](https://github.com/meelgroup/approxmc) (*).  
 4. Install [d4](https://github.com/crillab/d4).  
-5. Copy d4 binary to `src/bin/` folder and ensure execute permission.  
+5. Copy d4 binary to `bin/` folder and ensure execute permission.  
 
 *Tested on revisions 30c6787 of approxmc and 641f915 of cryptominisat.  
 
