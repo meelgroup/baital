@@ -10,7 +10,7 @@ Tested on: Ubuntu 18.10, 20.04 and Debian 11.
 ## Installation
 
 1. Install additional libraries: `graphviz`, `libgmp-dev`, `libmpfr-dev`, and `libmpc-dev`.  
-    - On Debian-based systems the command is `sudo apt install grahviz libgmp-dev libmpfr-dev libmpc-dev`  
+    - On Debian-based systems the command is `sudo apt install graphviz libgmp-dev libmpfr-dev libmpc-dev`  
 2. Install additional python libraries.  
     - `pip3 install -r requirements.txt`  
 3. Install [ApproxMC4](https://github.com/meelgroup/approxmc) (*).  
