@@ -435,10 +435,11 @@ class sampler2():
                 nodelen+=1
 
 
-    def parse2(self,dDNNFfile=None):
+    def parse2(self,dDNNFfile=None,nVars=0):
         '''Parses new d4 format to a tree like object
         
         :param dDNNFfile: specifies file containing decision-DNNF of the formula to sample from
+        :param nVars: number of variables in the original formula - information might be missed after d4 use
         '''
         if dDNNFfile:
             self._dDNNFfile = dDNNFfile
@@ -488,7 +489,10 @@ class sampler2():
                         self.treenodes.append(newnode)
                         nodemap.update({fromnode: (fromnodetype, nodelen)})
                         nodelen+=1
-        self.totalVariables = maxlabel
+        if nVars != 0:
+            self.totalVariables = nVars
+        else:
+            self.totalVariables = maxlabel
 
     def annotate(self,root, weights = None):
         '''Computes Model Counts'''
@@ -605,7 +609,9 @@ def sample(totalsamples, dDNNFarg, DIMACSCNF, loadPickle, weightFile=None, outpu
             print("The time taken by D4/Dsharp_PCompile is ", time.time() - start)
     if dDNNF:
         start = time.time()
-        if useNewParser:
+        if useNewParser and weights != {}:
+            sampler.parse2(dDNNF,len(weights))
+        elif useNewParser:
             sampler.parse2(dDNNF)
         else:
             sampler.parse(dDNNF)

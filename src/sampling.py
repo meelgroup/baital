@@ -117,7 +117,7 @@ def loadMaxComb(nvars, twise, combinationsFile):
                 res[val] +=1
         return res
     except:
-        print(f"Exception during the processing of {combinationsFile}. Each line shall contain a comma separated combination of size {twise}. Is {combinationsFile} corresponds to the input file?")
+        print(f"Exception during the processing of {combinationsFile}. Each line shall contain a comma separated combination of size {twise}. Does {combinationsFile} correspond to the input file?")
         sys.exit(1)
 
 # Attempts to get the total number of combinations or models from .count files.
@@ -233,7 +233,7 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
             
             # Generate weights for next round
             weightFunctions.generateWeights(count, nvars, strategy, maxComb, WEIGHTFILEPREF, roundN+2, funcNumber)
-        print("The time taken by round " + str(roundN+1) + " :" +  str(time.time()-round_start))
+        print("Time taken by round " + str(roundN+1) + " :" +  str(time.time()-round_start))
         print("Round " + str(roundN+1) + ' finished...')
         
         # for --desired-coverage option check if exit condition reached
@@ -249,15 +249,14 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
         
     output.close()
 
-    print("The time taken by sampling:", time.time()-start)
+    print("Total time taken by sampling:", time.time()-start)
     #cleanup
-    os.remove(PICKLEFILE)
-    for rn in range(roundN+1):
-        os.remove(WEIGHTFILEPREF + str(rn+1)  + '.txt')
-    if descoverage and roundN < rounds-1:
-        os.remove(WEIGHTFILEPREF + str(roundN+2)  + '.txt')
-
-    
+    if os.path.exists(PICKLEFILE):
+        os.remove(PICKLEFILE)
+    for rn in range(roundN+2):
+        if os.path.exists(WEIGHTFILEPREF + str(rn+1)  + '.txt'):
+            os.remove(WEIGHTFILEPREF + str(rn+1)  + '.txt')
+   
 
 epilog=textwrap.dedent('''\
 Strategies information: strategies define what parameter is used to select weights for the next round. The parameter is computed for each literal. The following lists the parameter for each strategy.
