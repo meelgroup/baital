@@ -66,25 +66,64 @@ def getTuples_rec(lst, sizeLeft, trieNode, count, comb, perLiteral):
             combNew = comb[:] + [lst[i]]
             getTuples_rec(lst[i+1 :], sizeLeft -1, trieNodeNew, count, combNew, perLiteral)
 
+#def genRandomBoxesOld(nvars, size, number, allowGenerateMoreThanExists = False):
+#    res = {}
+#    maxval = cnk(nvars, size) *(2**size)
+#    if  maxval < number and not allowGenerateMoreThanExists:
+#        print('There are only ' + str(maxval) + ' combinations')
+#        coeff = list(itertools.product(range(2), repeat=size))
+#        for comb in itertools.combinations(range(1,nvars+1), size):
+#            res.update({(0,tuple(sorted(map(lambda x : x[0] if x[1]==1 else -x[0], zip(comb,k))))):0 for k in coeff})
+#        return res
+#    for i in range(number):
+#        res.update({(i,tuple(sorted(map(lambda x: x if random.randint(0,1) == 1 else -x, random.sample(range(1,nvars+1), size))))):0})
+#    return res
+
 # Generates boxes for approximate counting. If allowGenerateMoreThanExists - always generates <number> of boxes, else can generate fewer if total number of distinct combinations is smaller that <number>            
 def genRandomBoxes(nvars, size, number, allowGenerateMoreThanExists = False):
-    res = {}
+    res = []
     maxval = cnk(nvars, size) *(2**size)
     if  maxval < number and not allowGenerateMoreThanExists:
         print('There are only ' + str(maxval) + ' combinations')
         coeff = list(itertools.product(range(2), repeat=size))
         for comb in itertools.combinations(range(1,nvars+1), size):
-            res.update({(0,tuple(sorted(map(lambda x : x[0] if x[1]==1 else -x[0], zip(comb,k))))):0 for k in coeff})
+            res.extend([tuple(sorted(map(lambda x : x[0] if x[1]==1 else -x[0], zip(comb,k)))) for k in coeff])
         return res
     for i in range(number):
-        res.update({(i,tuple(sorted(map(lambda x: x if random.randint(0,1) == 1 else -x, random.sample(range(1,nvars+1), size))))):0})
+        res.append(tuple(sorted(map(lambda x: x if random.randint(0,1) == 1 else -x, random.sample(range(1,nvars+1), size)))))
     return res
 
+def updateBoxesCoverage(uncovBoxes, size, sample):
+    newUncovBoxes = [] 
+    for comb in uncovBoxes:
+        if not all(sample[abs(comb[i])-1] == comb[i] for i in range(size)):
+            newUncovBoxes.append(comb)
+    return newUncovBoxes
 
-def updateBoxesCoverage(boxes, size, sample):
-    for comb in boxes.keys():
-        if boxes[comb] == 0 and all(sample[abs(comb[1][i])-1] == comb[1][i] for i in range(size)):
-            boxes[comb] = 1
+def updateBoxesCoverageSet(uncovBoxes, size, samples):
+    newUncovBoxes = [] 
+    for comb in uncovBoxes:
+        if all((not all(sample[abs(comb[i])-1] == comb[i] for i in range(size))) for sample in samples):
+            newUncovBoxes.append(comb)
+    return newUncovBoxes
+
+def computeBoxesCoverageImprove(newUncovBoxes, size, samples):
+    samplecov = []
+    boxcov = [[] for i in range(len(newUncovBoxes))]
+    for i in range(len(samples)):
+        scov = []
+        for j in range(len(newUncovBoxes)):
+             if all(samples[i][abs(newUncovBoxes[j][k])-1] == newUncovBoxes[j][k] for k in range(size)):
+                scov.append(j)
+                boxcov[j].append(i)
+        samplecov.append((len(scov),i,set(scov)))
+    return (samplecov,boxcov)
+
+#def updateBoxesCoverageOld(boxes, size, sample):
+#    for comb in boxes.keys():
+#        if boxes[comb] == 0 and all(sample[abs(comb[1][i])-1] == comb[1][i] for i in range(size)):
+#            boxes[comb] = 1
+
 
 def get_combinations_from_file(combfile):
     with open(combfile, "r") as f:

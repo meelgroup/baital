@@ -31,10 +31,15 @@ import weightFunctions
 import utils
 import sample_set_combinations
 import textwrap
+import shutil
 
 TMPSAMPLEFILE = 'samples_temp.txt'
 PICKLEFILE = 'saved.pickle'
 WEIGHTFILEPREF = 'weights'
+CMSGENCNFFILESUFFIX='_cmsgen.cnf'
+
+NBOXESFORUSEBESTSAMPLES = 4320
+USEBESTSAMPLESCOEFF = 10
 
 # For strategies 3 and 4 a coefficient for the number of boxes. Each literal is expected to appear in APPROXCOEFF*(2**(twise-1)) boxes
 APPROXCOEFF = 25
@@ -46,8 +51,8 @@ DESCOVEPSILON = 0.1
 # For strategies 3 and 4 computes number of boxes each literal is involved
 def computeNBoxesLit(varsBoxes, nvars):
     res = {var : 0 for var in [i+1 for i in range(nvars)] + [-i-1 for i in range(nvars)]}
-    for box in varsBoxes.keys():
-        for var in box[1]:
+    for box in varsBoxes:
+        for var in box:
             res[var] +=1
     for var in res.keys():
         if res[var] ==0:
@@ -56,11 +61,10 @@ def computeNBoxesLit(varsBoxes, nvars):
 
 # For strategies 3 and 4 estimates current coverage of each literal
 def boxesCoveragePerLiteral(boxes, nBoxesLit, nvars, size):
-    count ={var : 0 for var in [i+1 for i in range(nvars)] + [-i-1 for i in range(nvars)]}
-    for comb in boxes.keys():
-        if boxes[comb] == 1:
-            for var in comb[1]:
-                count[var] +=1
+    count ={var : nBoxesLit[var] for var in [i+1 for i in range(nvars)] + [-i-1 for i in range(nvars)]}
+    for comb in boxes:
+        for var in comb:
+            count[var] -=1
     for var in count.keys():
         count[var] = int(utils.cnk(nvars-2, size-1) * count[var] *(2**(size-1)) / nBoxesLit[var])
     return count
@@ -140,10 +144,59 @@ def loadModelCount(combinationsFile):
         print(f"Wrong format of the file {combinationsFile}. Each line shall have format 'x y' where x is a literal and y is a number of models or combinations with this literal")
         sys.exit(1)
 
-def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=None, samplesperround=-1, combinationsFile=None, funcNumber=2):
+def runCmsgen(cnffile, outputfile, samples):
+    seed = random.randrange(1000000)
+    cmd = "../bin/cmsgen --samplefile " + outputfile + " --samples " + str(samples) + " --seed " + str(seed) + " " + cnffile
+    try:
+        os.system(cmd)
+    except Exception as inst:
+        print(inst)   
+        sys.exit(1)
+    
+def insertWeights(dimacscnf, cmsfile, weightFile):
+    with open(dimacscnf) as fd:
+        lines = fd.readlines()
+        with open(weightFile) as fw:
+            weights = list(map((lambda x : x.strip().split(',')),fw.readlines()))
+            with open(cmsfile,'w+') as fc:
+                i=0
+                while i < len(lines) and (not (lines[i].startswith('p '))):
+                    fc.write(lines[i])
+                    i +=1
+                if i == len(lines):
+                    print("No line starting with 'p' found in "+ dimacscnf+". Aborting")
+                    sys.exit(1)
+                fc.write(lines[i])
+                i +=1
+                for weight in weights:
+                    fc.write("w " + weight[0] + ' '+ weight[1] + '\n')
+                while i < len(lines):
+                    fc.write(lines[i])
+                    i+=1
+
+def selectBestSamples(testBoxes,twise,newSamples,samplesperround):
+    samplecov,boxcov = utils.computeBoxesCoverageImprove(testBoxes,twise,newSamples)
+    selected = []
+    while len(selected) < samplesperround:
+        best = max(samplecov)
+        samplecov[best[1]] = (-1,best[1],best[2])
+        selected.append(best[1])
+        for j in best[2]:
+            for i in boxcov[j]:
+                if i != best[1] and i not in selected:
+                    oldval = samplecov[i]
+                    oldval[2].remove(j)
+                    samplecov[i] = (oldval[0]-1,oldval[1],oldval[2])
+    return [newSamples[x] for x in selected]
+
+def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=None, samplesperround=-1, combinationsFile=None, funcNumber=2, cmsgen=False, useBestSamples = False):
     if os.path.exists(TMPSAMPLEFILE):
         os.remove(TMPSAMPLEFILE)
     output = open(outputFile, 'w+')
+        
+    if cmsgen:
+        basename = os.path.splitext(os.path.basename(dimacscnf))[0]
+        cmsfile = basename + CMSGENCNFFILESUFFIX
     
     if descoverage:
         nSamples = -1
@@ -191,37 +244,54 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
     # Generation of initial weights, stored in WEIGHTFILEPREF + str(roundN+1)  + '.txt'
     weightFunctions.generateWeights(count, nvars, strategy, maxComb, WEIGHTFILEPREF, 1, funcNumber)
 
+    if useBestSamples:
+         ntestBoxes = NBOXESFORUSEBESTSAMPLES * (2**twise)
+         testBoxes = utils.genRandomBoxes(nvars, twise, ntestBoxes, allowGenerateMoreThanExists=True)
+
+    gensamplesperround = samplesperround*USEBESTSAMPLESCOEFF if useBestSamples else samplesperround
     # main loop
     for roundN in range(rounds):
         print("Round "  + str(roundN+1) + ' started...')
         round_start = time.time()
         weightFile = WEIGHTFILEPREF + str(roundN+1)  + '.txt'
         # Sampling
-        if roundN == 0:
-            waps_upd.sample(samplesperround, '', dimacscnf, None, weightFile=weightFile, outputfile=TMPSAMPLEFILE, savePickle=PICKLEFILE)
+        if cmsgen:
+            insertWeights(dimacscnf, cmsfile, weightFile)
+            runCmsgen(cmsfile, TMPSAMPLEFILE, gensamplesperround)
         else:
-            waps_upd.sample(samplesperround, '', '', PICKLEFILE, weightFile=weightFile, outputfile=TMPSAMPLEFILE)
+            if roundN == 0:
+                waps_upd.sample(gensamplesperround, '', dimacscnf, None, weightFile=weightFile, outputfile=TMPSAMPLEFILE, savePickle=PICKLEFILE)
+            else:
+                waps_upd.sample(gensamplesperround, '', '', PICKLEFILE, weightFile=weightFile, outputfile=TMPSAMPLEFILE)
         # Read new samples and update combination counters
         with open(TMPSAMPLEFILE) as ns:
             newSamplesLines = ns.readlines()
-            for i in range(len(newSamplesLines)):
+            if cmsgen:
+                newSamples = [list(map(int, nsl.strip().split(' ')[:-1]))  for nsl in newSamplesLines]
+            else:
+                newSamples = [list(map(int, nsl.strip().split(',')[1].strip().split(' '))) for nsl in newSamplesLines]
+            if useBestSamples:
+                newSamples = selectBestSamples(testBoxes,twise,newSamples,samplesperround)
+                #scores = [(utils.computeBoxesCoverageImprove(testBoxes,twise,s),s) for s in newSamples]
+                #newSamples = [x[1] for x in (sorted(scores, reverse=True))[:samplesperround]]
+                testBoxes = utils.updateBoxesCoverageSet(testBoxes, twise, newSamples)
+            for i in range(len(newSamples)):
                 if nSamples <0 or roundN != rounds-1 or roundN * samplesperround + i < nSamples: #ignore extra samples in case of non divisible by number of rounds
-                    lineParts = newSamplesLines[i].strip().split(',')
                     if roundN != rounds-1:
-                        s = list(map(int, lineParts[1].strip().split(' ')))
                         if strategy == 3 or strategy == 4:
-                            utils.updateBoxesCoverage(varsBoxes, twise, s)
+                            #utils.updateBoxesCoverage(varsBoxes, twise, newSamples[i])
+                            varsBoxes = utils.updateBoxesCoverage(varsBoxes, twise, newSamples[i])
                         elif strategy == 5:
-                                for val in s:
+                                for val in newSamples[i]:
                                     count[val] +=1
                         elif strategy == 1 or strategy == 2:
-                            utils.getTuples_rec(s, twise, trie, count, [], True)
+                            utils.getTuples_rec(newSamples[i], twise, trie, count, [], True)
                         else:
                             print('Unknown strategy')
                             sys.exit(1)
                         # Copy samples to output file
-                    sampleNumber = roundN * samplesperround + int(lineParts[0].strip())
-                    output.write(str(sampleNumber) + ',' + lineParts[1] + '\n')
+                    sampleNumber = roundN * samplesperround + i
+                    output.write(str(sampleNumber) + ',' + ' '.join(map(str,newSamples[i])) + '\n')
 
         os.remove(TMPSAMPLEFILE)
         
@@ -256,7 +326,10 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
     for rn in range(roundN+2):
         if os.path.exists(WEIGHTFILEPREF + str(rn+1)  + '.txt'):
             os.remove(WEIGHTFILEPREF + str(rn+1)  + '.txt')
-   
+    if os.path.exists(cmsfile):
+        os.remove(cmsfile)
+
+    
 
 epilog=textwrap.dedent('''\
 Strategies information: strategies define what parameter is used to select weights for the next round. The parameter is computed for each literal. The following lists the parameter for each strategy.
@@ -280,6 +353,8 @@ def main():
     parser.add_argument("--samples-per-round", type=int, default = 50, help="number of samples generated per round if --desired-coverage is set", dest='spr')
     parser.add_argument("--rounds", type=int, default=20, help="number of rounds to take samples", dest='rounds')
     parser.add_argument("--combinations", type=str, default='', help="file with the number of combinations with the literal allowed by constraints or the number of models involving the literal. If computed approximately - shall have .acomb extension", dest="combinationsFile")
+    parser.add_argument("--extra-samples", action='store_true', help="Each round more samples are generated and the best are selected", dest='generateMoreSamples')
+    parser.add_argument("--cmsgen", action='store_true', help="use cmsgen instead of waps", dest='cmsgen')
     parser.add_argument("--seed", type=int, default=None, help="random seed", dest="seed")
     parser.add_argument('DIMACSCNF', nargs='?', type=str, default="", help='input cnf file')
     args = parser.parse_args()
@@ -290,7 +365,7 @@ def main():
     if args.seed:
         np.random.seed(args.seed)
         random.seed(args.seed)
-    run(args.samples, args.rounds, args.DIMACSCNF, args.outputfile, args.twise, args.strategy, args.descoverage, args.spr, args.combinationsFile,  args.funcNumber)
+    run(args.samples, args.rounds, args.DIMACSCNF, args.outputfile, args.twise, args.strategy, args.descoverage, args.spr, args.combinationsFile,  args.funcNumber, cmsgen=args.cmsgen, useBestSamples=args.useBestSamples)
 
 if __name__== "__main__":
     main()

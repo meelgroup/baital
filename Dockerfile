@@ -34,6 +34,16 @@ RUN unzip 9b136b67491443954b0bd300aa15b03697053a7c.zip
 WORKDIR /d4-9b136b67491443954b0bd300aa15b03697053a7c
 RUN make -j8 ./d4
 
+# build cmsgen
+WORKDIR /
+RUN wget https://github.com/meelgroup/cmsgen/archive/e43a794e559bd3071d0de0947ef3b222c56037e1.zip
+RUN unzip e43a794e559bd3071d0de0947ef3b222c56037e1.zip
+WORKDIR /cmsgen-e43a794e559bd3071d0de0947ef3b222c56037e1
+RUN mkdir build
+WORKDIR /cmsgen-e43a794e559bd3071d0de0947ef3b222c56037e1/build
+RUN cmake ..
+RUN make
+
 
 RUN pip install pyparsing gmpy2 numpy pydot psutil pycosat
 
@@ -46,6 +56,8 @@ COPY ./src /baital/src
 COPY ./bin /baital/bin
 RUN cp /d4-9b136b67491443954b0bd300aa15b03697053a7c/d4 /baital/bin/
 RUN chmod +x /baital/bin/d4
+RUN cp /cmsgen-e43a794e559bd3071d0de0947ef3b222c56037e1/build/cmsgen /baital/bin/
+RUN chmod +x /baital/bin/cmsgen
 WORKDIR /baital/src
 
 ENTRYPOINT ["/usr/bin/python3", "baital.py"]

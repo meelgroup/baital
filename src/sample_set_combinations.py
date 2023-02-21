@@ -43,12 +43,14 @@ def approximate_coverage(samplefile, size, epsilon, delta):
     with open(samplefile, "r") as f:
         nvars = len(f.readline().strip().split(',')[1].strip().split(' '))     
     boxes = utils.genRandomBoxes(nvars, size, nBoxes)
+    nBoxesFinal = len(boxes)
     with open(samplefile, "r") as f:
         for line in f:
             s = list(map(int, line.strip().split(',')[1].strip().split(' ')))
-            utils.updateBoxesCoverage(boxes, size, s)
-    coveredBoxes = sum(boxes.values())
-    if len(boxes) < nBoxes:
+            boxes = utils.updateBoxesCoverage(boxes, size, s)
+    #coveredBoxes = sum(boxes.values())
+    coveredBoxes = nBoxesFinal - len(boxes)
+    if nBoxesFinal < nBoxes:
         countRes = coveredBoxes
     else:
         countRes = int(utils.cnk(nvars, size) * coveredBoxes *(2**size) / nBoxes)

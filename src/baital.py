@@ -61,7 +61,7 @@ def computeCoverage(dimacscnf, twise, samplesfile, rescombfile, combinationsFile
     return cov, tcov
 
 
-def run(dimacscnf, strategy, twise, samples, descoverage, spr, rounds, outputdir, outputfile, nocomb, combfile, papprx, pdelta, pepsilon, funcNumber, rescombfile, nosampling, outersamplefile, apprx, epsilon, delta, preprocessonly):
+def run(dimacscnf, strategy, twise, samples, descoverage, spr, rounds, outputdir, outputfile, nocomb, combfile, papprx, pdelta, pepsilon, funcNumber, rescombfile, nosampling, outersamplefile, apprx, epsilon, delta, preprocessonly, cmsgen, useBestSamples):
     benchmarkName = os.path.basename(dimacscnf).split('.')[0]
     if not outputfile:
         outputfile = benchmarkName + '.samples'
@@ -83,7 +83,7 @@ def run(dimacscnf, strategy, twise, samples, descoverage, spr, rounds, outputdir
         
     if not nosampling:
         sstart = time.time()
-        sampling.run(samples, rounds, dimacscnf, samplesfile, twise, strategy, descoverage=descoverage, samplesperround=spr, combinationsFile=combinationsFile, funcNumber=funcNumber)
+        sampling.run(samples, rounds, dimacscnf, samplesfile, twise, strategy, descoverage=descoverage, samplesperround=spr, combinationsFile=combinationsFile, funcNumber=funcNumber, cmsgen=cmsgen, useBestSamples=useBestSamples)
         stime = time.time() -sstart
     else:
         samplesfile = outersamplefile
@@ -185,6 +185,7 @@ def main():
     parser.add_argument("--outputdir", type=str, default="./results/", help="output directory", dest='outputdir')
     parser.add_argument("--outputfile", type=str, default="", help="output file for samples, will be placed in outputdir, default <cnf_filename>.samples", dest='outputfile')
     parser.add_argument("--twise", type=int, default=2, help="t value for t-wise coverage, default 2", dest='twise')
+    parser.add_argument("--cmsgen", action='store_true', help="use cmsgen instead of waps", dest='cmsgen')
         
     parser.add_argument("--preprocess-file", type=str, default='', help="precomputed file for skipping preprocessing step. Shall have .comb, or .acomb extension. See help for details", dest="combfile")
     parser.add_argument("--preprocess-delta", type=float, default=0.25, help="delta for approximate counting at preprocessing, default 0.25", dest='pdelta')
@@ -198,6 +199,7 @@ def main():
     end_cond.add_argument("--desired-coverage", type=float, help="samples are genereted until the desired coverage is reached or --rounds is completed. Cannot be used with --samples", dest='descoverage')
     parser.add_argument("--rounds", type=int, default=10, help="number of rounds for sample generation", dest='rounds')
     parser.add_argument("--samples-per-round", type=int, default=50, help="number of samples generated per round if --desired-coverage is set", dest='spr')
+    parser.add_argument("--extra-samples", action='store_true', help="Each round more samples are generated and the best are selected", dest='generateMoreSamples')
         
     parser.add_argument("--weight-function", type=int, default=2, choices=range(1, 8), help="Function number between 1 and 7 for weight generation, used in strategies 1, 2, 3, and 4", dest='funcNumber')
     parser.add_argument("--no-sampling", action='store_true', help="skip step 2, computes only the coverage of a provided .sample file with --samples-file", dest='nosampling')
@@ -248,7 +250,14 @@ def main():
     if args.descoverage and  (args.descoverage<=0 or args.descoverage >=1):
         print("--desired-coverage shall be in range (0,1)")
         sys.exit(1)
-
+    
+    if args.cmsgen and not os.path.exists("../bin/cmsgen"):
+        print("cmsgen in ../bin/ not found")
+        sys.exit(1)
+    elif not args.cmsgen and not s.path.exists("../bin/d4"):
+        print("d4 in ../bin/ not found")
+        sys.exit(1)
+    
     if not os.path.exists(args.outputdir):
         os.makedirs(args.outputdir)
         
@@ -256,7 +265,7 @@ def main():
         np.random.seed(args.seed)
         random.seed(args.seed)
     
-    run(args.DIMACSCNF, args.strategy, args.twise, args.samples, args.descoverage, args.spr, args.rounds, args.outputdir, args.outputfile, args.nocomb, args.combfile, args.papprx, args.pdelta, args.pepsilon, args.funcNumber, args.rescombfile, args.nosampling, args.externalsamplefile, args.apprx, args.epsilon, args.delta, args.preprocess)
+    run(args.DIMACSCNF, args.strategy, args.twise, args.samples, args.descoverage, args.spr, args.rounds, args.outputdir, args.outputfile, args.nocomb, args.combfile, args.papprx, args.pdelta, args.pepsilon, args.funcNumber, args.rescombfile, args.nosampling, args.externalsamplefile, args.apprx, args.epsilon, args.delta, args.preprocess, args.cmsgen, args.generateMoreSamples)
 
 if __name__== "__main__":
     main()
