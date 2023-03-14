@@ -254,7 +254,7 @@ def main():
     if args.cmsgen and not os.path.exists("../bin/cmsgen"):
         print("cmsgen in ../bin/ not found")
         sys.exit(1)
-    elif not args.cmsgen and not s.path.exists("../bin/d4"):
+    elif not args.cmsgen and not os.path.exists("../bin/d4"):
         print("d4 in ../bin/ not found")
         sys.exit(1)
     
