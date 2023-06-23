@@ -194,9 +194,8 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
         os.remove(TMPSAMPLEFILE)
     output = open(outputFile, 'w+')
         
-    if cmsgen:
-        basename = os.path.splitext(os.path.basename(dimacscnf))[0]
-        cmsfile = basename + CMSGENCNFFILESUFFIX
+    basename = os.path.splitext(os.path.basename(dimacscnf))[0]
+    cmsfile = basename + CMSGENCNFFILESUFFIX
     
     if descoverage:
         nSamples = -1
