@@ -63,7 +63,7 @@ def getTuples_rec(lst, sizeLeft, trieNode, count, comb, perLiteral):
             if lst[i] not in trieNode:
                 trieNode[lst[i]] = {}
             trieNodeNew = trieNode[lst[i]]
-            combNew = comb[:] + [lst[i]]
+            combNew = comb[:] + [lst[i]] if perLiteral else comb
             getTuples_rec(lst[i+1 :], sizeLeft -1, trieNodeNew, count, combNew, perLiteral)
 
 #def genRandomBoxesOld(nvars, size, number, allowGenerateMoreThanExists = False):

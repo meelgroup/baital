@@ -14,8 +14,9 @@ Tested on: Ubuntu 18.10, 20.04 and Debian 11.
 2. Install additional python libraries.  
     - `pip3 install -r requirements.txt`  
 3. Install [ApproxMC4](https://github.com/meelgroup/approxmc) (*).  
-4. Install [d4](https://github.com/crillab/d4) and copy d4 binary to `bin/` folder and ensure execute permission.  
-4.1 And/or install [Cmsgen](https://github.com/meelgroup/cmsgen) and copy cmsgen binary to `bin/` folder.  
+4. Install [Cmsgen](https://github.com/meelgroup/cmsgen) and copy cmsgen binary to `bin/` folder.  
+4.1 Install [d4](https://github.com/crillab/d4) and copy d4 binary to `bin/` folder and ensure execute permission. (Required only for WAPS sampling).  
+
 
 *Tested on revisions 30c6787 of approxmc and 641f915 of cryptominisat.  
 
@@ -87,6 +88,8 @@ Run command `python3 baital.py <arguments>` from `src` folder.
 | --rounds | int | 10 | Number of rounds for sample generation | 
 | --samples | int | 500 | Total number of samples to generate | 
 | --desired-coverage | float | | Samples are genereted until the desired coverage is reached or --rounds is completed. Cannot be used with --samples |
+| --extra-samples | | | Each round 10x samples are generated and the best are selected |
+| --waps | | | Use WAPS instead of CMSGen as a sampling engine. |
 | --samples-per-round | int | 50| Number of samples generated per round if --desired-coverage is set |
 | --weight-function | int | 2 | Function number between 1 and 7 for weight generation, used in strategies 1, 2, 3, and 4 |
 | --no-sampling | | | Skip sampling, use to compute the coverage of an existing test suite |

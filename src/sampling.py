@@ -189,7 +189,7 @@ def selectBestSamples(testBoxes,twise,newSamples,samplesperround):
                     samplecov[i] = (oldval[0]-1,oldval[1],oldval[2])
     return [newSamples[x] for x in selected]
 
-def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=None, samplesperround=-1, combinationsFile=None, funcNumber=2, cmsgen=False, useBestSamples = False):
+def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=None, samplesperround=-1, combinationsFile=None, funcNumber=2, waps=False, useBestSamples = False):
     if os.path.exists(TMPSAMPLEFILE):
         os.remove(TMPSAMPLEFILE)
     output = open(outputFile, 'w+')
@@ -254,7 +254,7 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
         round_start = time.time()
         weightFile = WEIGHTFILEPREF + str(roundN+1)  + '.txt'
         # Sampling
-        if cmsgen:
+        if not waps:
             insertWeights(dimacscnf, cmsfile, weightFile)
             runCmsgen(cmsfile, TMPSAMPLEFILE, gensamplesperround)
         else:
@@ -265,7 +265,7 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
         # Read new samples and update combination counters
         with open(TMPSAMPLEFILE) as ns:
             newSamplesLines = ns.readlines()
-            if cmsgen:
+            if not waps:
                 newSamples = [list(map(int, nsl.strip().split(' ')[:-1]))  for nsl in newSamplesLines]
             else:
                 newSamples = [list(map(int, nsl.strip().split(',')[1].strip().split(' '))) for nsl in newSamplesLines]
@@ -353,7 +353,7 @@ def main():
     parser.add_argument("--rounds", type=int, default=20, help="number of rounds to take samples", dest='rounds')
     parser.add_argument("--combinations", type=str, default='', help="file with the number of combinations with the literal allowed by constraints or the number of models involving the literal. If computed approximately - shall have .acomb extension", dest="combinationsFile")
     parser.add_argument("--extra-samples", action='store_true', help="Each round more samples are generated and the best are selected", dest='generateMoreSamples')
-    parser.add_argument("--cmsgen", action='store_true', help="use cmsgen instead of waps", dest='cmsgen')
+    parser.add_argument("--waps", action='store_true', help="use waps instead of cmsgen", dest='waps')
     parser.add_argument("--seed", type=int, default=None, help="random seed", dest="seed")
     parser.add_argument('DIMACSCNF', nargs='?', type=str, default="", help='input cnf file')
     args = parser.parse_args()
@@ -364,7 +364,7 @@ def main():
     if args.seed:
         np.random.seed(args.seed)
         random.seed(args.seed)
-    run(args.samples, args.rounds, args.DIMACSCNF, args.outputfile, args.twise, args.strategy, args.descoverage, args.spr, args.combinationsFile,  args.funcNumber, cmsgen=args.cmsgen, useBestSamples=args.useBestSamples)
+    run(args.samples, args.rounds, args.DIMACSCNF, args.outputfile, args.twise, args.strategy, args.descoverage, args.spr, args.combinationsFile,  args.funcNumber, waps=args.waps, useBestSamples=args.useBestSamples)
 
 if __name__== "__main__":
     main()
