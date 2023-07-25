@@ -36,7 +36,7 @@ Baital expects input files in Dimacs CNF format. [FeatureIDE](https://github.com
 
 ## Baital Description
 
-Baital uses an adaptive weighted sampling for the test suite generation for configurable systems. Contrary to uniform sampling where all samples are taken uniformly, Baital sampling is performed in rounds: at the beginning of each round a probability distribution for sampling is set by assigning weights to each literal. [WAPS](https://github.com/meelgroup/waps) tool is used for sampling. The selection of weights for each round is controlled by one of the strategies. All strategies compute weights for each literal; the computation is based on parameters listed below.  
+Baital uses an adaptive weighted sampling for the test suite generation for configurable systems. Contrary to uniform sampling where all samples are taken uniformly, Baital sampling is performed in rounds: at the beginning of each round a probability distribution for sampling is set by assigning weights to each literal. [Cmsgen](https://github.com/meelgroup/cmsgen) tool is used for sampling. Alternatively, [WAPS](https://github.com/meelgroup/waps) tool can be used with option --waps (deprecated, provides worse coverage and performance). The selection of weights for each round is controlled by one of the strategies. All strategies compute weights for each literal; the computation is based on parameters listed below.  
   1. Strategy 1: ratio between the number of combinations with a literal in the current sample set and the number of combinations with the literal allowed by constraints of the configurable system.
   2. Strategy 2: ratio between the number of combinations with a literal in the current sample set and choice of twise distinct elements in NVariables.
   3. Strategy 3: ratio between the approximate number of combinations with a literal in the current sample set and the number of combinations with the literal allowed by constraints of the configurable system.
@@ -54,7 +54,7 @@ Baital performs 3 steps:
         --twise option provides a size of combinations to maximise coverage 
         --strategy defines how the weights are generated between rounds
         --samples number of samples to generate
-        --rounds number of rounds for sample generation, weights are updated between rounds. Higher coverage is expected with large number of rounds, however each round requires update of dDNNF annotation that might be long.
+        --rounds number of rounds for sample generation, weights are updated between rounds. Higher coverage is expected with large number of rounds, however each round requires additional computations that might affect performance.
         --weight-function a function transforming the ratios computed by strategies 1, 2, 3, and 4 into weights. Varying this parameter might affect the resulted coverage
    3. Step 3: computation of twise coverage. It computes a ratio between the number of distinct combinations in the sample set and the number of distinct feature combinations satisfying the constraints of the system. The latter number is obtained fron the results of Step 1.(i) or runs Step 1.(i)  (could take hours for twise=2, infeasible for large models for twise=3). Alternatively, both elements of the ratio can be computed approximately.  
         --cov-approximate forces approximate computation.  
@@ -121,7 +121,7 @@ Last lines of the console output contain the following information:
 
 ### Note on execution time
 
-Preprocessing step could take large time depending on the type of preprocessing, *twise*, and the number of variables. Several hours are required for exact computation for `twise=2`. 
+Preprocessing step could take large time depending on the type of preprocessing, *twise*, and the number of variables. Several hours are required for exact computation for `twise=2`.
 For large benchmarks and `twise >=3` approximate methods shall be used: for preprocessing --preprocess-approximate option; for sampling - strategies 3, 4, or 5; for computation of coverage --cov-approximate.
 
 
