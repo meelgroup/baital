@@ -32,7 +32,7 @@ Other arguments can be passed as usual; note that all files in the arguments mus
 
 ## Benchmarks
 
-Baital expects input files in Dimacs CNF format. [FeatureIDE](https://github.com/FeatureIDE/FeatureIDE/releases/) can be used to generate input files from configurable systems. Benchmarks can be found at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4022395.svg)](https://doi.org/10.5281/zenodo.4022395) or at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5883536.svg)](https://doi.org/10.5281/zenodo.5883536).
+Baital expects input files in Dimacs CNF format. [FeatureIDE](https://github.com/FeatureIDE/FeatureIDE/releases/) can be used to generate input files from configurable systems. Benchmarks can be found at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10220246.svg)](https://doi.org/10.5281/zenodo.10220246) or at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5883536.svg)](https://doi.org/10.5281/zenodo.5883536).
 
 ## Baital Description
 
@@ -142,6 +142,15 @@ If you use our tool, please cite us with the following bibtex:
   title={A Scalable t-wise Coverage Estimator},
   author={Baranov, Eduard and Chakraborty, Sourav and Legay, Axel and Meel, Kuldeep S and Variyam, Vinodchandran N.},
   booktitle={Proc. 44th International Conference on Software Engineering (ICSE 2022)},
+  year={2022}
+}
+```
+```
+@inproceedings{BL22,
+  title={Baital: an adaptive weighted sampling platform for configurable systems},
+  author={Baranov, Eduard and Legay, Axel},
+  booktitle={Proceedings of the 26th ACM International Systems and Software Product Line Conference-Volume B},
+  pages={46--49},
   year={2022}
 }
 ```
