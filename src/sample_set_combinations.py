@@ -21,7 +21,6 @@
 import time
 import argparse
 import random
-import os
 import math
 import utils
 import sys
@@ -33,7 +32,7 @@ def check_coverage(samplefile, size):
     with open(samplefile, "r") as f:
         for line in f:
             s = list(map(int, line.strip().split(',')[1].strip().split(' ')))
-            utils.getTuples_rec(s, size, trie, count, [], False)
+            utils.getTuples_rec(s, size, trie, count, [])
     print("Number of combinations " + str(count[0]))
     return count[0]
 
@@ -48,7 +47,6 @@ def approximate_coverage(samplefile, size, epsilon, delta):
         for line in f:
             s = list(map(int, line.strip().split(',')[1].strip().split(' ')))
             boxes = utils.updateBoxesCoverage(boxes, size, s)
-    #coveredBoxes = sum(boxes.values())
     coveredBoxes = nBoxesFinal - len(boxes)
     if nBoxesFinal < nBoxes:
         countRes = coveredBoxes

@@ -86,7 +86,7 @@ def getMaxCov(dimacscnf, twise, combinationsFile):
 def loadApproxCount(combinationsFile):
     res = {}
     if not os.path.exists(combinationsFile):
-        print(f"File {combinationsFile} not found.")
+        print("File " + combinationsFile + " not found.")
         sys.exit(1)
     with open(combinationsFile) as f:
         lines = f.readlines()
@@ -96,13 +96,13 @@ def loadApproxCount(combinationsFile):
             res.update({int(spl[0]): int(spl[1])})
         return res
     except:
-        print(f"Wrong format of the file {combinationsFile}. Each line shall have format 'x y' where x is a literal and y is a number of models or combinations with this literal")
+        print("Wrong format of the file " + combinationsFile +". Each line shall have format 'x y' where x is a literal and y is a number of models or combinations with this literal")
         sys.exit(1)
 
 # Attempts to get the total number of combinations from the provided combinationsFile. Expected either .comb or .acomb file
 def loadMaxComb(nvars, twise, combinationsFile):
     if not os.path.exists(combinationsFile):
-        print(f"File {combinationsFile} not found.")
+        print("File " + combinationsFile + " not found.")
         sys.exit(1)
     if combinationsFile[-6:] == '.acomb':
         print("Warning: a file with approximate number of combinations given.")
@@ -113,7 +113,7 @@ def loadMaxComb(nvars, twise, combinationsFile):
     try:
         nSize = len(lines[0].split(","))
         if nSize != twise:
-            print(f"Wrong size of combinations in {combinationsFile}: expected {twise}, {nSize} is in the file")
+            print("Wrong size of combinations in " + combinationsFile +": expected " + str(twise) + ', ' + str(nSize) + " is in the file")
             sys.exit(1)
         for line in lines:
             comb = map(lambda x: int(x.strip()), line.split(","))
@@ -121,27 +121,7 @@ def loadMaxComb(nvars, twise, combinationsFile):
                 res[val] +=1
         return res
     except:
-        print(f"Exception during the processing of {combinationsFile}. Each line shall contain a comma separated combination of size {twise}. Does {combinationsFile} correspond to the input file?")
-        sys.exit(1)
-
-# Attempts to get the total number of combinations or models from .count files.
-# not used anymore
-def loadModelCount(combinationsFile):
-    res = {}
-    if not os.path.exists(combinationsFile):
-        print(f"File {combinationsFile} not found.")
-        sys.exit(1)
-    with open(combinationsFile) as f:
-        lines = f.readlines()
-    if combinationsFile[-6:] == '.acomb':
-        lines = lines[1:]
-    try:
-        for line in lines:
-            spl = line.strip().split(' ')
-            res.update({int(spl[0]): int(spl[1])})
-        return res
-    except:
-        print(f"Wrong format of the file {combinationsFile}. Each line shall have format 'x y' where x is a literal and y is a number of models or combinations with this literal")
+        print("Exception during the processing of " + combinationsFile + ". Each line shall contain a comma separated combination of size " +str(twise) + ". Does " + combinationsFile + " correspond to the input file?")
         sys.exit(1)
 
 def runCmsgen(cnffile, outputfile, samples):
@@ -190,10 +170,7 @@ def selectBestSamples(testBoxes,twise,newSamples,samplesperround):
     return [newSamples[x] for x in selected]
 
 def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=None, samplesperround=-1, combinationsFile=None, funcNumber=2, waps=False, useBestSamples = False):
-    if os.path.exists(TMPSAMPLEFILE):
-        os.remove(TMPSAMPLEFILE)
-    output = open(outputFile, 'w+')
-        
+    utils.rmfile(TMPSAMPLEFILE)        
     basename = os.path.splitext(os.path.basename(dimacscnf))[0]
     cmsfile = basename + CMSGENCNFFILESUFFIX
     
@@ -212,9 +189,6 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
                 nvars = int(line.split(' ')[2].strip())
                 break
     
-    #Load precomputed number of combinations or models or take an upper-approximation
-    #if strategy == 3: 
-    #    maxComb = loadModelCount(combinationsFile)
     if strategy == 5: 
         maxComb = None
     elif strategy == 1 or strategy == 3: #Strategy 1 - loading feasible combinations; could have approximate number of combinations
@@ -248,86 +222,79 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
          testBoxes = utils.genRandomBoxes(nvars, twise, ntestBoxes, allowGenerateMoreThanExists=True)
 
     gensamplesperround = samplesperround*USEBESTSAMPLESCOEFF if useBestSamples else samplesperround
+    with open(outputFile, 'w+') as output:
     # main loop
-    for roundN in range(rounds):
-        print("Round "  + str(roundN+1) + ' started...')
-        round_start = time.time()
-        weightFile = WEIGHTFILEPREF + str(roundN+1)  + '.txt'
-        # Sampling
-        if not waps:
-            insertWeights(dimacscnf, cmsfile, weightFile)
-            runCmsgen(cmsfile, TMPSAMPLEFILE, gensamplesperround)
-        else:
-            if roundN == 0:
-                waps_upd.sample(gensamplesperround, '', dimacscnf, None, weightFile=weightFile, outputfile=TMPSAMPLEFILE, savePickle=PICKLEFILE)
-            else:
-                waps_upd.sample(gensamplesperround, '', '', PICKLEFILE, weightFile=weightFile, outputfile=TMPSAMPLEFILE)
-        # Read new samples and update combination counters
-        with open(TMPSAMPLEFILE) as ns:
-            newSamplesLines = ns.readlines()
+        for roundN in range(rounds):
+            print("Round "  + str(roundN+1) + ' started...')
+            round_start = time.time()
+            weightFile = WEIGHTFILEPREF + str(roundN+1)  + '.txt'
+            # Sampling
             if not waps:
-                newSamples = [list(map(int, nsl.strip().split(' ')[:-1]))  for nsl in newSamplesLines]
+                insertWeights(dimacscnf, cmsfile, weightFile)
+                runCmsgen(cmsfile, TMPSAMPLEFILE, gensamplesperround)
             else:
-                newSamples = [list(map(int, nsl.strip().split(',')[1].strip().split(' '))) for nsl in newSamplesLines]
-            if useBestSamples:
-                newSamples = selectBestSamples(testBoxes,twise,newSamples,samplesperround)
-                #scores = [(utils.computeBoxesCoverageImprove(testBoxes,twise,s),s) for s in newSamples]
-                #newSamples = [x[1] for x in (sorted(scores, reverse=True))[:samplesperround]]
-                testBoxes = utils.updateBoxesCoverageSet(testBoxes, twise, newSamples)
-            for i in range(len(newSamples)):
-                if nSamples <0 or roundN != rounds-1 or roundN * samplesperround + i < nSamples: #ignore extra samples in case of non divisible by number of rounds
-                    if roundN != rounds-1:
-                        if strategy == 3 or strategy == 4:
-                            #utils.updateBoxesCoverage(varsBoxes, twise, newSamples[i])
-                            varsBoxes = utils.updateBoxesCoverage(varsBoxes, twise, newSamples[i])
-                        elif strategy == 5:
-                                for val in newSamples[i]:
-                                    count[val] +=1
-                        elif strategy == 1 or strategy == 2:
-                            utils.getTuples_rec(newSamples[i], twise, trie, count, [], True)
-                        else:
-                            print('Unknown strategy')
-                            sys.exit(1)
-                        # Copy samples to output file
-                    sampleNumber = roundN * samplesperround + i
-                    output.write(str(sampleNumber) + ',' + ' '.join(map(str,newSamples[i])) + '\n')
+                if roundN == 0:
+                    waps_upd.sample(gensamplesperround, '', dimacscnf, None, weightFile=weightFile, outputfile=TMPSAMPLEFILE, savePickle=PICKLEFILE)
+                else:
+                    waps_upd.sample(gensamplesperround, '', '', PICKLEFILE, weightFile=weightFile, outputfile=TMPSAMPLEFILE)
+            # Read new samples and update combination counters
+            with open(TMPSAMPLEFILE) as ns:
+                newSamplesLines = ns.readlines()
+                if not waps:
+                    newSamples = [list(map(int, nsl.strip().split(' ')[:-1]))  for nsl in newSamplesLines]
+                else:
+                    newSamples = [list(map(int, nsl.strip().split(',')[1].strip().split(' '))) for nsl in newSamplesLines]
+                if useBestSamples:
+                    newSamples = selectBestSamples(testBoxes,twise,newSamples,samplesperround)
+                    testBoxes = utils.updateBoxesCoverageSet(testBoxes, twise, newSamples)
+                for i in range(len(newSamples)):
+                    if nSamples <0 or roundN != rounds-1 or roundN * samplesperround + i < nSamples: #ignore extra samples in case of non divisible by number of rounds
+                        if roundN != rounds-1:
+                            if strategy == 3 or strategy == 4:
+                                varsBoxes = utils.updateBoxesCoverage(varsBoxes, twise, newSamples[i])
+                            elif strategy == 5:
+                                    for val in newSamples[i]:
+                                        count[val] +=1
+                            elif strategy == 1 or strategy == 2:
+                                utils.getTuples_rec(newSamples[i], twise, trie, count, [], perLiteral=True)
+                            else:
+                                print('Unknown strategy')
+                                sys.exit(1)
+                            # Copy samples to output file
+                        sampleNumber = roundN * samplesperround + i
+                        output.write(str(sampleNumber) + ',' + ' '.join(map(str,newSamples[i])) + '\n')
 
-        os.remove(TMPSAMPLEFILE)
-        
-        # Update counter for strategies 3 and 4 - done once, not after each new sample
-        if roundN != rounds-1:
-            if strategy == 3 or strategy == 4:
-                count = boxesCoveragePerLiteral(varsBoxes, nBoxesLit, nvars, twise)
-                print("Current approximation of sampled combinations " + str(sum(count.values()) / twise) )
+            utils.rmfile(TMPSAMPLEFILE)
             
-            # Generate weights for next round
-            weightFunctions.generateWeights(count, nvars, strategy, maxComb, WEIGHTFILEPREF, roundN+2, funcNumber)
-        print("Time taken by round " + str(roundN+1) + " :" +  str(time.time()-round_start))
-        print("Round " + str(roundN+1) + ' finished...')
-        
-        # for --desired-coverage option check if exit condition reached
-        if descoverage:
-            if strategy == 5:
-                currentSample = sample_set_combinations.run(output, twise, True, DESCOVEPSILON, DESCOVDELTA)
-            else:    
-                currentSample = sum(count.values()) / twise
-            currentCov = currentSample/maxcov
-            if currentCov> descoverage:
-                print(f"Coverage {descoverage} reached")
-                break
-        
-    output.close()
+            # Update counter for strategies 3 and 4 - done once, not after each new sample
+            if roundN != rounds-1:
+                if strategy == 3 or strategy == 4:
+                    count = boxesCoveragePerLiteral(varsBoxes, nBoxesLit, nvars, twise)
+                    print("Current approximation of sampled combinations " + str(sum(count.values()) / twise) )
+                
+                # Generate weights for next round
+                weightFunctions.generateWeights(count, nvars, strategy, maxComb, WEIGHTFILEPREF, roundN+2, funcNumber)
+            print("Time taken by round " + str(roundN+1) + " :" +  str(time.time()-round_start))
+            print("Round " + str(roundN+1) + ' finished...')
+            
+            # for --desired-coverage option check if exit condition reached
+            if descoverage:
+                if strategy == 5:
+                    currentSample = sample_set_combinations.run(output, twise, True, DESCOVEPSILON, DESCOVDELTA)
+                else:    
+                    currentSample = sum(count.values()) / twise
+                currentCov = currentSample/maxcov
+                if currentCov> descoverage:
+                    print("Coverage " + str(descoverage) + " reached")
+                    break
+
 
     print("Total time taken by sampling:", time.time()-start)
     #cleanup
-    if os.path.exists(PICKLEFILE):
-        os.remove(PICKLEFILE)
+    utils.rmfile(PICKLEFILE)
     for rn in range(roundN+2):
-        if os.path.exists(WEIGHTFILEPREF + str(rn+1)  + '.txt'):
-            os.remove(WEIGHTFILEPREF + str(rn+1)  + '.txt')
-    if os.path.exists(cmsfile):
-        os.remove(cmsfile)
-
+        utils.rmfile(WEIGHTFILEPREF + str(rn+1)  + '.txt')
+    utils.rmfile(cmsfile)
     
 
 epilog=textwrap.dedent('''\

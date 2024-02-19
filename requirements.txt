@@ -4,3 +4,4 @@ numpy
 pydot
 psutil
 pycosat
+antlr4-python3-runtime

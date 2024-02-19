@@ -1,5 +1,5 @@
 # /***********[utils.py]
-# Copyright (c) 2022 Eduard Baranov, Axel Legay, Kuldeep Meel
+# Copyright (c) 2024 Eduard Baranov, Axel Legay, Kuldeep Meel
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -21,6 +21,7 @@
 
 import itertools
 import random
+import os
 
 # Simple and incomplete DIMACS2 parser
 def parse_cnf(cnffile):
@@ -40,15 +41,18 @@ def parse_cnf(cnffile):
 
 # Compute n choose k
 def cnk(n, k):
+    if k > n/2:
+        k = n-k
     res =1
     for i in range(k):
         res *= n-i
     for i in range(k):
-        res /= (i+1)
+        res //= (i+1)
     return res
 
+
 # The function update trieNode and count variables. PerLiteral controls whether the total or per-literal counting shall be performed. Comb argument is aggregator for recursion, shall be [] in the call.
-def getTuples_rec(lst, sizeLeft, trieNode, count, comb, perLiteral):
+def getTuples_rec(lst, sizeLeft, trieNode, count, comb, perLiteral = False):
     if sizeLeft == 1:
         for x in lst:
             if x not in trieNode: 
@@ -66,19 +70,6 @@ def getTuples_rec(lst, sizeLeft, trieNode, count, comb, perLiteral):
             combNew = comb[:] + [lst[i]] if perLiteral else comb
             getTuples_rec(lst[i+1 :], sizeLeft -1, trieNodeNew, count, combNew, perLiteral)
 
-#def genRandomBoxesOld(nvars, size, number, allowGenerateMoreThanExists = False):
-#    res = {}
-#    maxval = cnk(nvars, size) *(2**size)
-#    if  maxval < number and not allowGenerateMoreThanExists:
-#        print('There are only ' + str(maxval) + ' combinations')
-#        coeff = list(itertools.product(range(2), repeat=size))
-#        for comb in itertools.combinations(range(1,nvars+1), size):
-#            res.update({(0,tuple(sorted(map(lambda x : x[0] if x[1]==1 else -x[0], zip(comb,k))))):0 for k in coeff})
-#        return res
-#    for i in range(number):
-#        res.update({(i,tuple(sorted(map(lambda x: x if random.randint(0,1) == 1 else -x, random.sample(range(1,nvars+1), size))))):0})
-#    return res
-
 # Generates boxes for approximate counting. If allowGenerateMoreThanExists - always generates <number> of boxes, else can generate fewer if total number of distinct combinations is smaller that <number>            
 def genRandomBoxes(nvars, size, number, allowGenerateMoreThanExists = False):
     res = []
@@ -93,6 +84,37 @@ def genRandomBoxes(nvars, size, number, allowGenerateMoreThanExists = False):
         res.append(tuple(sorted(map(lambda x: x if random.randint(0,1) == 1 else -x, random.sample(range(1,nvars+1), size)))))
     return res
 
+# Used in genRandomBoxes_nf
+def random_walk(proba):
+    return random.random() < proba
+
+# Generates boxes for approximate counting for multivalued case.
+def genRandomBoxes_nf(nvars, size, varsizes, number, matrix):
+    res = []
+    total_comb = matrix[nvars-1][size-1]
+    if total_comb <= number:
+        print('There are only ' + str(total_comb) + ' combinations')
+        for comb in itertools.combinations(range(0,nvars), size):
+            combsizes = [list(range(varsizes[x])) for x in comb]
+            res.extend([tuple(sorted(zip(comb,k))) for k in itertools.product(*combsizes)])
+    else:
+        for ind in range(number):
+            box = []
+            i = nvars-1
+            j = size-1
+            while len(box) < size:
+                if i == 0:
+                    box.append(i)
+                elif random_walk(matrix[i-1][j]/matrix[i][j]):
+                    i -=1
+                else:
+                    box.append(i)
+                    i-=1
+                    j-=1
+            res.append(tuple(sorted(map(lambda x: (x, random.randrange(varsizes[x])), box))))
+    return res
+
+# Given a sample removes boxes that are not covered by the sample
 def updateBoxesCoverage(uncovBoxes, size, sample):
     newUncovBoxes = [] 
     for comb in uncovBoxes:
@@ -100,6 +122,15 @@ def updateBoxesCoverage(uncovBoxes, size, sample):
             newUncovBoxes.append(comb)
     return newUncovBoxes
 
+# Given a sample remove boxes that are not covered by the sample. Numerical Features case
+def updateBoxesCoverage_nf(uncovBoxes, size, sample):
+    newUncovBoxes = [] 
+    for comb in uncovBoxes:
+        if not all(sample[comb[i][0]] == comb[i][1] for i in range(size)):
+            newUncovBoxes.append(comb)
+    return newUncovBoxes
+
+# Given a set of samples removes boxes that are not covered by the samples.
 def updateBoxesCoverageSet(uncovBoxes, size, samples):
     newUncovBoxes = [] 
     for comb in uncovBoxes:
@@ -107,6 +138,7 @@ def updateBoxesCoverageSet(uncovBoxes, size, samples):
             newUncovBoxes.append(comb)
     return newUncovBoxes
 
+# Used for --extra-samples option. 
 def computeBoxesCoverageImprove(newUncovBoxes, size, samples):
     samplecov = []
     boxcov = [[] for i in range(len(newUncovBoxes))]
@@ -119,12 +151,7 @@ def computeBoxesCoverageImprove(newUncovBoxes, size, samples):
         samplecov.append((len(scov),i,set(scov)))
     return (samplecov,boxcov)
 
-#def updateBoxesCoverageOld(boxes, size, sample):
-#    for comb in boxes.keys():
-#        if boxes[comb] == 0 and all(sample[abs(comb[1][i])-1] == comb[1][i] for i in range(size)):
-#            boxes[comb] = 1
-
-
+# Loading preprocessed combinations
 def get_combinations_from_file(combfile):
     with open(combfile, "r") as f:
         if combfile[-5:] == 'acomb':
@@ -133,9 +160,17 @@ def get_combinations_from_file(combfile):
             total = len(f.readlines()) -1
     return total
 
-
+# Loading MaxCov from file
 def getCoverageFromCombFile(combinationsFile):
     if combinationsFile[-5:] == '.comb':
         with open(combinationsFile) as f:
             lines = f.readlines()
             return len(lines)
+
+# Delete file
+def rmfile(filename):
+    if os.path.exists(filename):
+        try:
+            os.remove(filename)
+        except OSError:
+            pass

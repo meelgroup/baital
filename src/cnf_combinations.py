@@ -1,5 +1,5 @@
 ## /***********[cnf_combinations.py]
-# Copyright (c) 2022 Eduard Baranov, Sourav Chakraborty, Axel Legay, Kuldeep S. Meel, Vinodchandran N. Variyam 
+# Copyright (c) 2024 Eduard Baranov, Sourav Chakraborty, Axel Legay, Kuldeep S. Meel, Vinodchandran N. Variyam 
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -64,50 +64,6 @@ def get_combinations(nVars, clauses, size, outputfile, combs):
     f.close()
     print("Time to get satisfiable combinations " + str(time.time() - start))
     return feasibleCombs
-
-#Counts a number of models involving a literal for each literal
-# not used anymore
-def modelCount(nVars, cnfFile, outputFile):
-    tmpCnfFile = 'tmp.cnf'
-    tmpFile = "output.tmp"
-    
-    literals = list(range(-nVars, 0)) + list(range(1, nVars+1))
-    res = {}
-    cf = open(cnfFile)
-    lines = cf.readlines()
-    cf.close()
-    for i in range(len(lines)):
-        if lines[i].startswith('p'):
-            spl = lines[i].strip().split(' ')
-            spl[-1] = str(1+ int(spl[-1])) # increment the number of clauses
-            lines[i] = ' '.join(spl) + '\n'
-    
-    curPerc = 0.0
-    total = len(literals)
-    for i in range(len(literals)):
-        tcf = open(tmpCnfFile, 'w+')
-        tcf.writelines(lines)
-        tcf.write(str(literals[i]) + ' 0\n')
-        tcf.close()
-        cmd = "../bin/d4 " + tmpCnfFile + ' -dDNNF > ' + tmpFile + ' 2>&1'
-        os.system(cmd)
-        out = open(tmpFile)
-        outlines = out.readlines()
-        for line in outlines:
-            if line.startswith('s'):
-                res.update({literals[i]: line.strip().split(' ')[1]})
-        out.close()
-        os.remove(tmpCnfFile)
-        os.remove(tmpFile)
-        if i / total > curPerc + 0.05:
-            curPerc += 0.05
-            print(str(round(100 * curPerc)) + "% done")
-    
-    resFile = open(outputFile, 'w+')
-    for k,v in res.items():
-        resFile.write(str(k) + ' ' + v + '\n')
-    resFile.close()
-    return res
 
 #-----------------------------------------------------------------------------------------------------
 
@@ -180,7 +136,7 @@ def generateGFCNF(nVars, clauses, fsize, outputFile):
     writeClauses(outputFile, clauses + newClauses, nVars, fsize, bvsize)        
 
 
-# Generete formula to compute the number of feature combinations involving a literal in a parameter. Size of feature combination is twise = fzise + 1 (the given literal)
+# Generate formula to compute the number of feature combinations involving a literal in a parameter. Size of feature combination is twise = fzise + 1 (the given literal)
 def generateGFCNFLiteral(nVars, clauses, fsize, literal, outputFile):
     if fsize== 0:
         return
@@ -191,19 +147,11 @@ def generateGFCNFLiteral(nVars, clauses, fsize, literal, outputFile):
         newClauses.extend(neqClause(nVars + i*bvsize + 1, literal, bvsize))
     writeClauses(outputFile, clauses + newClauses, nVars, fsize, bvsize)       
 
-def rmfile(filename):
-    try:
-        os.remove(filename)
-    except OSError:
-        pass
-
 def runApproxmc(tmpCNF, epsilon, delta):
     approxOutput='out.pmc'
     try:
         cmd = 'approxmc --seed ' + str(random.randint(1,10000)) + ' --epsilon ' + str(epsilon) + ' --delta ' + str(delta) + ' ' + tmpCNF + ' >' + approxOutput  
-        start = time.time()
         os.system(cmd)
-        total_user_time = time.time() - start
         result = -1
         with open(approxOutput) as f:
             for line in f:
@@ -211,18 +159,20 @@ def runApproxmc(tmpCNF, epsilon, delta):
                     number= int(line.strip().split(' ')[2].strip())
                     result = number
                     break
-        os.remove(approxOutput)
+        utils.rmfile(approxOutput)
         return result
     except:
-        print(f"Approxmc call failed.")
+        print("Approxmc call failed.")
         sys.exit(1)
 
+# Computes the approximate number of combinations
 def approxComb(nVars, clauses, twise, tmpCNF, epsilon, delta):
     generateGFCNF(nVars, clauses, twise, tmpCNF)
     result = runApproxmc(tmpCNF, epsilon, delta)
-    os.remove(tmpCNF)
+    utils.rmfile(tmpCNF)
     return result
     
+# Computes the approximate number of combinations for each literal
 def approxCombLiteral(nVars, clauses, twise, outputfile, tmpCNF, epsilon, delta):
     res = {}
     curPerc = 0.0
@@ -240,11 +190,11 @@ def approxCombLiteral(nVars, clauses, twise, outputfile, tmpCNF, epsilon, delta)
         f.write(str(twise)+ '\n')
         for key in res.keys():
             f.write(str(key) + ' ' + str(res[key]) + '\n')
-    os.remove(tmpCNF)
+    utils.rmfile(tmpCNF)
     return res
     
 #-----------------------------------------------------------------------------------------------------
-###Modes: 1 - compute exact number of combinations;  2 - compute approximate number of combinations; 3 - compute approximate number of combinations per literal; (not used anymore)4 - compute number of models per literal;
+###Modes: 1 - compute exact number of combinations;  2 - compute approximate number of combinations; 3 - compute approximate number of combinations per literal
 def run(dimacscnf, twise, mode, outputdir, epsilon, delta):
     nVars, clauses = utils.parse_cnf(dimacscnf)
     benchmarkName = os.path.basename(dimacscnf).split('.')[0]
@@ -253,10 +203,6 @@ def run(dimacscnf, twise, mode, outputdir, epsilon, delta):
         res = approxComb(nVars, clauses, twise, benchmarkName + TMPCNFSUFFIX, epsilon, delta)
         print("Approximate number of combinations is " + str(res))
         print("Total time: " + str(time.time() - start_full))
-#    elif mode == 4:   #not used anymore
-#        start_full = time.time()
-#        res = modelCount(nVars, dimacscnf, os.path.join(outputdir,  benchmarkName + '.count'))
-#        print("Total time: " + str(time.time() - start_full))
     elif mode == 3:
         start_full = time.time()
         res = approxCombLiteral(nVars, clauses, twise, os.path.join(outputdir,  benchmarkName + '_' + str(twise) + '.acomb'), benchmarkName + TMPCNFSUFFIX, epsilon, delta)
@@ -282,7 +228,6 @@ if __name__ == "__main__":
     parser.add_argument('DIMACSCNF', nargs='?', type=str, default="", help='input cnf file in dimacs format')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--combinations', action='store_true', help="counts number of combinations, this is the default mode", dest='m1')
-    #mode.add_argument('--model-count', action='store_true', help="counts number of models for each literal", dest='m4')
     mode.add_argument('--approximate', action='store_true', help="counts approximate number of combinations", dest='m2')
     mode.add_argument('--approximate-literal', action='store_true', help="counts approximate number of combinations for each literal", dest='m3')
     parser.add_argument("--delta", type=float, default=0.05, help="Delta for approximate counting", dest='delta')
@@ -301,8 +246,6 @@ if __name__ == "__main__":
         mode = 2
     elif args.m3:
         mode =3 
-    #elif args.m4:
-    #    mode =4
     
     Path(args.outputdir).mkdir(parents=True, exist_ok=True)
     run(args.DIMACSCNF, args.size, mode, args.outputdir, args.epsilon, args.delta)
