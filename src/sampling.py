@@ -126,7 +126,7 @@ def loadMaxComb(nvars, twise, combinationsFile):
 
 def runCmsgen(cnffile, outputfile, samples):
     seed = random.randrange(1000000)
-    cmd = "../bin/cmsgen --samplefile " + outputfile + " --samples " + str(samples) + " --seed " + str(seed) + " " + cnffile
+    cmd = "cmsgen --samplefile " + outputfile + " --samples " + str(samples) + " --seed " + str(seed) + " " + cnffile
     try:
         os.system(cmd)
     except Exception as inst:
