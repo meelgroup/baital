@@ -15,58 +15,6 @@ def generateZ3file(inputfile, z3file):
     return vars2bv,orderedVars,valuedvarsfromint
     
 #Runs z3 on z3file and converts output to DIMACS format
-def convert2CNF_old(z3file, outputfile, vars2bv):
-    z3outfile = z3file + '.out'
-    utils.rmfile(z3outfile)
-    cmd =  'z3 ' + z3file + '> ' + z3outfile
-    os.system(cmd)
-    with open(z3outfile) as fo:
-        lines = fo.readlines()
-        lines = lines[2:-2]
-    with open(outputfile, 'w+') as fi:    
-        i =0
-        maxvar = 0
-        cnffilelines = []
-        varsmap = {}
-        varsretmap = {}
-        curvar = 1
-        nLines = len(lines)
-        while i < nLines:
-            line = lines[i].strip()
-            lbracket = line.count('(')
-            rbracket = line.count(')')
-            while lbracket !=rbracket :
-                line = line + lines[i+1]
-                lbracket = line.count('(')
-                rbracket = line.count(')')
-                i+=1
-            line = line.replace('(or', '')
-            line = line.replace(',', '')
-            line = line.replace(')', '')
-            line = line.replace('(not ', '-')
-            els = list(filter(None, line.split(' ')))
-            elsConv = []
-            for var in els:
-                isneg = var.startswith('-')
-                vr = var[1:].strip() if isneg else var.strip()
-                if not vr in varsmap:
-                    varsmap.update({vr:curvar})
-                    varsretmap.update({str(curvar):vr})
-                    curvar +=1
-                elsConv.append(-varsmap[vr] if isneg else varsmap[vr])
-            cnffilelines.append(' '.join([str(x) for x in elsConv])+' 0\n')
-            i+=1
-        for var in vars2bv:
-            if var not in varsmap:
-                varsmap.update({var:curvar})
-                varsretmap.update({str(curvar):var})
-                curvar +=1
-        fi.write('p cnf ' + str(curvar-1) + ' ' + str(len(cnffilelines)) + '\n')
-        for line in cnffilelines:
-            fi.write(line)
-    utils.rmfile(z3outfile)
-    return varsmap, varsretmap
-
 def convert2CNF(z3file, outputfile, vars2bv, nMaxcovVars=0):
     z3outfile = z3file + '.out'
     utils.rmfile(z3outfile)

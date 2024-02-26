@@ -106,7 +106,6 @@ def parseVars(lines):
                 curline +=1
             elif line.startswith("Cp :"): # constraints line
                 beforeCp = False
-                curline +=1
             elif not line.startswith('['):
                 els = line.split(' ')
                 if (len(els) == 1) and (not line.startswith('[')):    # simple variable - bool
@@ -243,7 +242,7 @@ def writeQFBVFile(outfile, vars2bv, orderedVars, valuedvarsfromint, clauses):
             else: 
                 fo.write('(declare-fun ' + var +' () (_ BitVec '+ str(vars2bv[var][0]) +'))\n')
                 if (vars2bv[var][2] - vars2bv[var][1]) != 2**vars2bv[var][0]:
-                    fo.write('(assert (and (bvuge ' + var+ ' (_ bv' + str(vars2bv[var][1]) + " " +  str(vars2bv[var][0]) +')) (bvult ' + var+ ' (_ bv' + str(vars2bv[var][2]) + " " +  str(vars2bv[var][0]) +'))))\n')
+                    fo.write('(assert (and (bvuge ' + var+ ' (_ bv0 ' +  str(vars2bv[var][0]) +')) (bvult ' + var+ ' (_ bv' + str(vars2bv[var][2]-vars2bv[var][1]) + " " +  str(vars2bv[var][0]) +'))))\n')
                 for j in range(vars2bv[var][0]):
                     fo.write('(declare-fun ' + var + '_' + str(j) +' () (_ Bool))\n')
                 extravars.append(var)
@@ -259,6 +258,8 @@ def convert(inputfile, outfile):
     with open(inputfile) as f:
         lines = f.readlines()    
     curline,clauses, vars2bv, valuedvars2int,valuedvarsfromint = parseVars(lines)
+    clauses.append(lines[curline].strip().split(' ')[-1]) # Top-level feature is always included
+    curline +=1
     while(curline < len(lines)):
         line = lines[curline].strip()
         if line == '' or line.startswith("//"):

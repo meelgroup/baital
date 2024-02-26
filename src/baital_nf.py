@@ -36,7 +36,7 @@ import math
 from pathlib import Path
 
 def loadValsFromSMTFile(inputfile):
-    with open(z3outfile) as fo:
+    with open(inputfile) as f:
         line1 = f.readline()
         line2 = f.readline()
         line3 = f.readline()
@@ -56,20 +56,21 @@ def loadValsFromSMTFile(inputfile):
         else:                               # integer var 
             nVals.update({parts[0]:val})   
         orderedvars.append(parts[0])
-    for el in line2[3:].strip().split(' '): # second line provide integer vars and smallest value (except smallest value equal to 0); except vars defined with var = x || var =y ...  
-        parts = el.strip().split('=')
-        vmin = int(parts[1])
-        vars2bv.update({parts[0]:[math.ceil(math.log2(nVals[parts[0]])), vmin, vmin+nVals[parts[0]]]})
-        coverednVals.append(parts[0])
-    for el in line3[3:].strip().split(' '): # third line provides integer vars and the list of values (for vars defined with var = x || var =y ...  )
-        parts = el.strip().split('=')
-        pairs = parts[1][1:-1].split(',')
-        valuedvarsfromint.update({parts[0]:{int(p.split(':')[0]) : int(p.split(':')[1]) for p in pairs}})
-        coverednVals.append(parts[0])
-    for el in nVals:                       # integer vars not appearing in second or third lines: smallest value is 0
+    if len(line2) > 5:
+        for el in line2[3:].strip().split(' '): # second line provide integer vars and smallest value (except smallest value equal to 0); except vars defined with var = x || var =y ...  
+            parts = el.strip().split('=')
+            vmin = int(parts[1])
+            vars2bv.update({parts[0]:[math.ceil(math.log2(nVals[parts[0]])), vmin, vmin+nVals[parts[0]]]})
+            coverednVals.append(parts[0])
+    if len(line3) > 5:
+        for el in line3[3:].strip().split(' '): # third line provides integer vars and the list of values (for vars defined with var = x || var =y ...  )
+            parts = el.strip().split('=')
+            pairs = parts[1][1:-1].split(',')
+            valuedvarsfromint.update({parts[0]:{int(p.split(':')[0]) : int(p.split(':')[1]) for p in pairs}})
+    for el in nVals:                       # integer vars not appearing in second line: smallest value is 0
         if el not in coverednVals:
-            vars2bv.update({el:[math.ceil(math.log2(nVals[el])), 0, vmin+nVals[el]]})
-    return vars2bv,orderedVars,valuedvarsfromint
+            vars2bv.update({el:[math.ceil(math.log2(nVals[el])), 0, nVals[el]]})
+    return vars2bv,orderedvars,valuedvarsfromint
 
 def computeCoverage(nsamplesfile, qfbvfile, outputdir, twise, rescombfile, apprx, epsilon, delta, nocomb, seed):
     cstart = time.time()

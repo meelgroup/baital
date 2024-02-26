@@ -30,10 +30,35 @@ import utils
 import converter
 from pathlib import Path
       
+def check_combination(comb, z3file, tmpCNF, varsizes):
+    shutil.copyfile(z3file, tmpCNF)
+    z3outFile = 'z3res.txt'
+    # add constraint to include the current combination
+    with open(tmpCNF, 'a+') as ftmpCNF:
+        for lit in comb:
+            if varsizes[lit[0]] > 2:
+                nBits = math.ceil(math.log2(varsizes[lit[0]]))
+                ftmpCNF.write('(assert  (= ' + lit[0] + ' (_ bv' + str(lit[1]) + ' ' + str(nBits) +')))\n')
+            else:
+                if lit[1] ==0:
+                    ftmpCNF.write('(assert (not ' + lit[0] +'))\n')
+                else:
+                    ftmpCNF.write('(assert ' + lit[0] +')\n')
+        ftmpCNF.write('(check-sat)\n')
+    # check satisfiability
+    cmd = 'z3 ' + tmpCNF + ' > ' + z3outFile 
+    os.system(cmd)
+    with open(z3outFile) as fres:
+        lines = fres.readlines()
+        s = 'UNSAT'
+        if len(lines) > 0 and lines[0].strip() == 'sat':
+            s= 'SAT'
+    utils.rmfile(z3outFile)
+    return s != 'UNSAT'
+    
 # Computing exact number of combinations 
 def get_combinations_nf(z3file, size, outputfile, combs):
     tmpCNF = z3file[:-4] + '.tmp'
-    z3outFile = 'z3res.txt'
     varsizes = {}
     orderedvars= [] 
     with open(z3file) as f:
@@ -44,53 +69,33 @@ def get_combinations_nf(z3file, size, outputfile, combs):
             orderedvars.append(parts[0])
     orderedvars = list(varsizes.keys())
     feasibleCombs = []
-    allComb = []
     start = time.time()
-    #generate all combinations to check
-    if size == 1:
-        allComb = [[(x,y)] for x in varsizes for y in range(varsizes[x])]
-    else:
-        for precomb in combs[-1]:
-            first = orderedvars.index(precomb[-1][0]) +1
-            for l in range(first, len(orderedvars)):
-                for v in range(varsizes[orderedvars[l]]):
-                    newComb = precomb[:] + [(orderedvars[l],v)]
-                    allComb.append(newComb)
-    
-    total = len(allComb)
-    print("Total combinations to check " + str(total))
     curPerc = 0.0
     with open(outputfile, "w+") as f:
-        for i in range(len(allComb)):
-            comb = allComb[i]
-            shutil.copyfile(z3file, tmpCNF)
-            # add constraint to include the current combination
-            with open(tmpCNF, 'a+') as ftmpCNF:
-                for lit in comb:
-                    if varsizes[lit[0]] > 2:
-                        nBits = math.ceil(math.log2(varsizes[lit[0]]))
-                        ftmpCNF.write('(assert  (= ' + lit[0] + ' (_ bv' + str(lit[1]) + ' ' + str(nBits) +')))\n')
-                    else:
-                        if lit[1] ==0:
-                            ftmpCNF.write('(assert (not ' + lit[0] +'))\n')
-                        else:
-                            ftmpCNF.write('(assert ' + lit[0] +')\n')
-                ftmpCNF.write('(check-sat)\n')
-            # check satisfiability
-            cmd = 'z3 ' + tmpCNF + ' > ' + z3outFile 
-            os.system(cmd)
-            with open(z3outFile) as fres:
-                lines = fres.readlines()
-                s = 'UNSAT'
-                if len(lines) > 0 and lines[0].strip() == 'sat':
-                    s= 'SAT'
-            if s != 'UNSAT':
-                f.write(','.join(map(str, comb)) + '\n')
-                feasibleCombs.append(comb)
-            if i / total > curPerc + 0.05:
-                curPerc += 0.05
-                print(str(round(100 * curPerc)) + "% done")
-            utils.rmfile(z3outFile)
+        if size == 1:
+            allComb = [[(x,y)] for x in varsizes for y in range(varsizes[x])]        
+            total = len(allComb)
+            for i in range(len(allComb)):
+                comb = allComb[i]
+                if check_combination(comb, z3file, tmpCNF, varsizes):
+                    f.write(','.join(map(str, comb)) + '\n')
+                    feasibleCombs.append(comb)
+                if i / total > curPerc + 0.05:
+                    curPerc += 0.05
+                    print(str(round(100 * curPerc)) + "% done")
+        else:
+            for i in range(len(combs[-1])):
+                precomb = combs[-1][i]
+                first = orderedvars.index(precomb[-1][0]) +1
+                for l in range(first, len(orderedvars)):
+                    for v in range(varsizes[orderedvars[l]]):
+                        newComb = precomb[:] + [(orderedvars[l],v)]
+                        if check_combination(newComb, z3file, tmpCNF, varsizes):
+                            f.write(','.join(map(str, newComb)) + '\n')
+                            feasibleCombs.append(newComb)
+                if i / len(combs[-1]) > curPerc + 0.05:
+                    curPerc += 0.05
+                    print(str(round(100 * curPerc)) + "% done")
     utils.rmfile(tmpCNF)
     print("Time to get satisfiable combinations " + str(time.time() - start))
     return feasibleCombs             
@@ -171,7 +176,7 @@ def approxComb_nf(qfbvfile, twise, epsilon, delta, seed):
                 result = number // divisor
                 break
     if result != -1:
-        print("Approximate number of combinations is " + str(result))
+        print("MaxCov: approximate number of combinations is " + str(result))
     else:
         print("Result is not found in " + approxOutput)
     utils.rmfile(approxOutput)
@@ -200,7 +205,7 @@ def run(qfbvfile, size, outputdir, approx, epsilon, delta, seed):
             print("Generating " + str(i+1) + "-wise combinations")
             combs.append(get_combinations_nf(qfbvfile, i+1, os.path.join(outputdir, benchmarkName + '_' + str(i+1) + '.comb'), combs))
         res = len(combs[-1])
-        print("Number of combinations is " + str(res))
+        print("MaxCov: number of combinations is " + str(res))
         print("Total time: " + str(time.time() - start_full))
     return res
 
