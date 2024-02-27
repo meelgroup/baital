@@ -33,6 +33,7 @@ import numpy as np
 import baital
 import utils
 import math
+import shutil
 from pathlib import Path
 
 def loadValsFromSMTFile(inputfile):
@@ -278,8 +279,8 @@ def main():
         print("--desired-coverage shall be in range (0,1)")
         sys.exit(1)
     
-    if not args.waps and not os.path.exists("../bin/cmsgen"):
-        print("cmsgen in ../bin/ not found")
+    if not args.waps and shutil.which('cmsgen') is None:
+        print("cmsgen is not found")
         sys.exit(1)
     elif args.waps and not os.path.exists("../bin/d4"):
         print("d4 in ../bin/ not found")

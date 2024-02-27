@@ -1,29 +1,41 @@
-FROM ubuntu:20.04 as builder
+FROM ubuntu:22.04 as builder
 
 LABEL Description="Baital"
 
 RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common unzip
 
-RUN apt-get install --no-install-recommends -y time libboost-program-options-dev gcc g++ make cmake zlib1g-dev wget make libgmp-dev graphviz libmpfr-dev libmpc-dev build-essential libm4ri-dev libgmp3-dev python3 python3-dev python3-pip
+RUN apt-get install --no-install-recommends -y time make cmake build-essential gcc g++ zlib1g-dev wget libgmp-dev graphviz libmpfr-dev libmpc-dev libboost-program-options-dev libboost-serialization-dev libm4ri-dev libgmp3-dev python3 python3-dev python3-pip z3
 
 # build CMS
 WORKDIR /
-RUN wget https://github.com/msoos/cryptominisat/archive/641f91597d1292f691d8cc8fd191bed73d004ebf.zip
-RUN unzip 641f91597d1292f691d8cc8fd191bed73d004ebf.zip
-WORKDIR /cryptominisat-641f91597d1292f691d8cc8fd191bed73d004ebf/
+RUN wget https://github.com/msoos/cryptominisat/archive/refs/tags/5.11.21.zip
+RUN unzip 5.11.21.zip
+WORKDIR /cryptominisat-5.11.21/
 RUN mkdir build
-WORKDIR /cryptominisat-641f91597d1292f691d8cc8fd191bed73d004ebf/build
+WORKDIR /cryptominisat-5.11.21/build
 RUN cmake -DSTATICCOMPILE=ON ..
 RUN make -j6 \
     && make install
 
+# build Arjun
+WORKDIR /
+RUN wget https://github.com/meelgroup/arjun/archive/refs/tags/2.5.4.zip
+RUN unzip 2.5.4.zip
+WORKDIR /arjun-2.5.4/
+RUN mkdir build
+WORKDIR /arjun-2.5.4/build
+RUN cmake -DSTATICCOMPILE=ON ..
+RUN make -j6 \
+    && make install
+    
+   
 # build approxmc
 WORKDIR /
-RUN wget https://github.com/meelgroup/approxmc/archive/30c6787e02c9660fd6798d8664f4beda9497495a.zip
-RUN unzip 30c6787e02c9660fd6798d8664f4beda9497495a.zip
-WORKDIR /approxmc-30c6787e02c9660fd6798d8664f4beda9497495a
+RUN wget https://github.com/meelgroup/approxmc/archive/refs/tags/4.1.24.zip
+RUN unzip 4.1.24.zip
+WORKDIR /approxmc-4.1.24/
 RUN mkdir build
-WORKDIR /approxmc-30c6787e02c9660fd6798d8664f4beda9497495a/build
+WORKDIR /approxmc-4.1.24/build
 RUN cmake -DSTATICCOMPILE=ON ..
 RUN make -j6 \
     && make install
@@ -36,16 +48,17 @@ RUN make -j8 ./d4
 
 # build cmsgen
 WORKDIR /
-RUN wget https://github.com/meelgroup/cmsgen/archive/e43a794e559bd3071d0de0947ef3b222c56037e1.zip
-RUN unzip e43a794e559bd3071d0de0947ef3b222c56037e1.zip
-WORKDIR /cmsgen-e43a794e559bd3071d0de0947ef3b222c56037e1
+RUN wget https://github.com/meelgroup/cmsgen/archive/refs/tags/6.1.0.zip
+RUN unzip 6.1.0.zip
+WORKDIR /cmsgen-6.1.0
 RUN mkdir build
-WORKDIR /cmsgen-e43a794e559bd3071d0de0947ef3b222c56037e1/build
-RUN cmake ..
-RUN make
+WORKDIR /cmsgen-6.1.0/build
+RUN cmake -DSTATICCOMPILE=ON ..
+RUN make \
+    && make install
 
 
-RUN pip install pyparsing gmpy2 numpy pydot psutil pycosat
+RUN pip install pyparsing gmpy2 numpy pydot psutil pycosat antlr4-python3-runtime
 
 RUN mkdir /baital
 RUN mkdir /baital/bin
@@ -53,11 +66,8 @@ RUN mkdir /baital/src
 RUN mkdir /baital/benchmarks
 
 COPY ./src /baital/src
-COPY ./bin /baital/bin
 RUN cp /d4-9b136b67491443954b0bd300aa15b03697053a7c/d4 /baital/bin/
 RUN chmod +x /baital/bin/d4
-RUN cp /cmsgen-e43a794e559bd3071d0de0947ef3b222c56037e1/build/cmsgen /baital/bin/
-RUN chmod +x /baital/bin/cmsgen
 WORKDIR /baital/src
 
-ENTRYPOINT ["/usr/bin/python3", "baital.py"]
+ENTRYPOINT ["/usr/bin/python3"]
