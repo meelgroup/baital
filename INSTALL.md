@@ -30,7 +30,7 @@
 4.1 git clone https://github.com/meelgroup/cmsgen  
 4.2 cd cmsgen  
 4.3 mkdir build && cd build  
-4.4 cmake ..  
+4.4 cmake -DSTATICCOMPILE=ON ..  
 4.5 make  
 4.6 sudo make install  
 5. (Optional) Install [d4](https://github.com/crillab/d4) and copy d4 binary to `bin/` folder and ensure execute permission. (Required only for WAPS sampling).  

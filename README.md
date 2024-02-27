@@ -20,7 +20,7 @@ Detailed instructions can be found in Install.md.
 2. Install additional python libraries.  
     - `pip3 install -r requirements.txt`  
 3. Install [ApproxMC4](https://github.com/meelgroup/approxmc) (*).  
-4. Install [Cmsgen](https://github.com/meelgroup/cmsgen).  
+4. Install [Cmsgen](https://github.com/meelgroup/cmsgen) with -DSTATICCOMPILE=ON flag.  
 5. (Optional) Install [d4](https://github.com/crillab/d4) and copy d4 binary to `bin/` folder and ensure execute permission. (Required only for WAPS sampling).  
 6. Install z3: `sudo apt install z3` (Required for Multi-valued/Numerical Features).  
 
