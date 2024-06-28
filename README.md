@@ -15,16 +15,11 @@ Tested on: Ubuntu, Debian, and CentOS.
 
 Detailed instructions can be found in Install.md.  
 
-1. Install libraries required by additional tools: `build-essential` `cmake` `graphviz` `libgmp-dev` `libmpfr-dev` `libmpc-dev` `zlib1g-dev` `libboost-program-options-dev` `libboost-serialization-dev` `libgmp3-dev`.  
+1. Install libraries required by additional tools: `build-essential` `cmake` `graphviz` `libgmp-dev` `libmpfr-dev` `libmpc-dev` `zlib1g-dev` `libboost-program-options-dev` `libboost-serialization-dev` `libgmp3-dev` `z3`.  
     - `sudo apt install` on Debian-based systems 
 2. Install additional python libraries.  
     - `pip3 install -r requirements.txt`  
-3. Install [ApproxMC4](https://github.com/meelgroup/approxmc) (*).  
-4. Install [Cmsgen](https://github.com/meelgroup/cmsgen) with -DSTATICCOMPILE=ON flag.  
-5. (Optional) Install [d4](https://github.com/crillab/d4) and copy d4 binary to `bin/` folder and ensure execute permission. (Required only for WAPS sampling).  
-6. Install z3: `sudo apt install z3` (Required for Multi-valued/Numerical Features).  
-
-*We do not yet support python interface of the tools, but require their binaries installed.  
+3. (Optional) Install [d4](https://github.com/crillab/d4) and copy d4 binary to `bin/` folder and ensure execute permission. (Required only for WAPS sampling).  
 
 ### Docker image
 

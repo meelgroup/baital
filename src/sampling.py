@@ -32,6 +32,7 @@ import utils
 import sample_set_combinations
 import textwrap
 import shutil
+import pycmsgen
 
 TMPSAMPLEFILE = 'samples_temp.txt'
 PICKLEFILE = 'saved.pickle'
@@ -124,7 +125,38 @@ def loadMaxComb(nvars, twise, combinationsFile):
         print("Exception during the processing of " + combinationsFile + ". Each line shall contain a comma separated combination of size " +str(twise) + ". Does " + combinationsFile + " correspond to the input file?")
         sys.exit(1)
 
-def runCmsgen(cnffile, outputfile, samples):
+#Running cmsgen with python interface
+def runCmsgen(dimacscnf, weightFile, nsamples):
+    solver = pycmsgen.Solver(seed=random.randrange(1000000))
+    samples = []
+    nvars = -1
+    with open(dimacscnf) as f:
+        lines = f.readlines()
+        for line in lines:
+            if line.startswith("p"):
+                nvars = int(line.split(' ')[2].strip())
+            elif not line.startswith("c"):
+                solver.add_clause(map(int,line.strip().split(' ')[:-1]))
+    with open(weightFile) as fw:
+        weights = list(map((lambda x : x.strip().split(',')),fw.readlines()))
+        for weight in weights:
+            solver.set_var_weight(int(weight[0]), float(weight[1]))
+    if solver.nb_vars() != nvars:
+        print("Wrong number of vars in solver")
+    for i in range(nsamples):
+        sat,sol = solver.solve()
+        if not sat:
+            print("Unsatisfiable formula")
+            sys.exit(1)
+        lst = []
+        for i in range(1,nvars+1):
+            lst.append(i if sol[i] else -i)
+        samples.append(lst)
+    return samples
+    
+
+# Old version using cmsgen binary
+def runCmsgen_old(cnffile, outputfile, samples):
     seed = random.randrange(1000000)
     cmd = "cmsgen --samplefile " + outputfile + " --samples " + str(samples) + " --seed " + str(seed) + " " + cnffile
     try:
@@ -132,8 +164,8 @@ def runCmsgen(cnffile, outputfile, samples):
     except Exception as inst:
         print(inst)   
         sys.exit(1)
-    
-def insertWeights(dimacscnf, cmsfile, weightFile):
+# Used with old cmsgen    
+def insertWeights_old(dimacscnf, cmsfile, weightFile):
     with open(dimacscnf) as fd:
         lines = fd.readlines()
         with open(weightFile) as fw:
@@ -230,41 +262,39 @@ def run(nSamples, rounds, dimacscnf, outputFile, twise, strategy, descoverage=No
             weightFile = WEIGHTFILEPREF + str(roundN+1)  + '.txt'
             # Sampling
             if not waps:
-                insertWeights(dimacscnf, cmsfile, weightFile)
-                runCmsgen(cmsfile, TMPSAMPLEFILE, gensamplesperround)
+                newSamples = runCmsgen(dimacscnf, weightFile, gensamplesperround)
+                #insertWeights_old(dimacscnf, cmsfile, weightFile)
+                #runCmsgen_old(cmsfile, TMPSAMPLEFILE, gensamplesperround)
             else:
                 if roundN == 0:
                     waps_upd.sample(gensamplesperround, '', dimacscnf, None, weightFile=weightFile, outputfile=TMPSAMPLEFILE, savePickle=PICKLEFILE)
                 else:
                     waps_upd.sample(gensamplesperround, '', '', PICKLEFILE, weightFile=weightFile, outputfile=TMPSAMPLEFILE)
             # Read new samples and update combination counters
-            with open(TMPSAMPLEFILE) as ns:
-                newSamplesLines = ns.readlines()
-                if not waps:
-                    newSamples = [list(map(int, nsl.strip().split(' ')[:-1]))  for nsl in newSamplesLines]
-                else:
+                with open(TMPSAMPLEFILE) as ns:
+                    newSamplesLines = ns.readlines()
                     newSamples = [list(map(int, nsl.strip().split(',')[1].strip().split(' '))) for nsl in newSamplesLines]
-                if useBestSamples:
-                    newSamples = selectBestSamples(testBoxes,twise,newSamples,samplesperround)
-                    testBoxes = utils.updateBoxesCoverageSet(testBoxes, twise, newSamples)
-                for i in range(len(newSamples)):
-                    if nSamples <0 or roundN != rounds-1 or roundN * samplesperround + i < nSamples: #ignore extra samples in case of non divisible by number of rounds
-                        if roundN != rounds-1:
-                            if strategy == 3 or strategy == 4:
-                                varsBoxes = utils.updateBoxesCoverage(varsBoxes, twise, newSamples[i])
-                            elif strategy == 5:
-                                    for val in newSamples[i]:
-                                        count[val] +=1
-                            elif strategy == 1 or strategy == 2:
-                                utils.getTuples_rec(newSamples[i], twise, trie, count, [], perLiteral=True)
-                            else:
-                                print('Unknown strategy')
-                                sys.exit(1)
-                            # Copy samples to output file
-                        sampleNumber = roundN * samplesperround + i
-                        output.write(str(sampleNumber) + ',' + ' '.join(map(str,newSamples[i])) + '\n')
-
-            utils.rmfile(TMPSAMPLEFILE)
+            if useBestSamples:
+                newSamples = selectBestSamples(testBoxes,twise,newSamples,samplesperround)
+                testBoxes = utils.updateBoxesCoverageSet(testBoxes, twise, newSamples)
+            for i in range(len(newSamples)):
+                if nSamples <0 or roundN != rounds-1 or roundN * samplesperround + i < nSamples: #ignore extra samples in case of non divisible by number of rounds
+                    if roundN != rounds-1:
+                        if strategy == 3 or strategy == 4:
+                            varsBoxes = utils.updateBoxesCoverage(varsBoxes, twise, newSamples[i])
+                        elif strategy == 5:
+                                for val in newSamples[i]:
+                                    count[val] +=1
+                        elif strategy == 1 or strategy == 2:
+                            utils.getTuples_rec(newSamples[i], twise, trie, count, [], perLiteral=True)
+                        else:
+                            print('Unknown strategy')
+                            sys.exit(1)
+                        # Copy samples to output file
+                    sampleNumber = roundN * samplesperround + i
+                    output.write(str(sampleNumber) + ',' + ' '.join(map(str,newSamples[i])) + '\n')
+            if waps:
+                utils.rmfile(TMPSAMPLEFILE)
             
             # Update counter for strategies 3 and 4 - done once, not after each new sample
             if roundN != rounds-1:

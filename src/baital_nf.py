@@ -34,6 +34,7 @@ import baital
 import utils
 import math
 import shutil
+import importlib.util
 from pathlib import Path
 
 def loadValsFromSMTFile(inputfile):
@@ -279,8 +280,13 @@ def main():
         print("--desired-coverage shall be in range (0,1)")
         sys.exit(1)
     
-    if not args.waps and shutil.which('cmsgen') is None:
-        print("cmsgen is not found")
+    if importlib.util.find_spec("pyapproxmc") is None:
+        print("pyapproxmc is not found")
+        sys.exit(1)
+        
+ #   if not args.waps and shutil.which('cmsgen') is None:
+    if not args.waps and importlib.util.find_spec("pycmsgen") is None:
+        print("pycmsgen is not found")
         sys.exit(1)
     elif args.waps and not os.path.exists("../bin/d4"):
         print("d4 in ../bin/ not found")

@@ -29,6 +29,7 @@ import sys
 import random
 from pathlib import Path
 import utils
+import pyapproxmc
 
 TMPCNFSUFFIX = '_tmp.cnf'
      
@@ -119,6 +120,7 @@ def generateNewClauses(nVars, fsize, bvsize):
             newClauses.extend(relClause(nVars + i*bvsize + 1, j, bvsize, valueVarsBaseIndex + i + 1))
     return newClauses
 
+# Used for old approxmc
 def writeClauses(outputFile, clauses, nVars, fsize, bvsize):
     with open(outputFile, 'w+') as f:
         varList = [i for i in range(nVars + 1, nVars + fsize*bvsize + fsize +1)]
@@ -130,14 +132,15 @@ def writeClauses(outputFile, clauses, nVars, fsize, bvsize):
     
 #vars indexes: [1, nVars] - original, [nVars+1, nVars + fsize*bvsize] - index variables, [nVars + fsize*bvsize + 1, nVars + fsize*bvsize + fsize]
 # index i correspond to var=(i+1), indexes starting from 0 rather than from 1
-def generateGFCNF(nVars, clauses, fsize, outputFile):
+def generateGFCNF(nVars, clauses, fsize):
     bvsize = math.ceil(math.log2(nVars+1))
     newClauses = generateNewClauses(nVars, fsize, bvsize)
-    writeClauses(outputFile, clauses + newClauses, nVars, fsize, bvsize)        
-
+    varList = [i for i in range(nVars + 1, nVars + fsize*bvsize + fsize +1)]
+    #writeClauses(outputFile, clauses + newClauses, nVars, fsize, bvsize)        
+    return varList,newClauses
 
 # Generate formula to compute the number of feature combinations involving a literal in a parameter. Size of feature combination is twise = fzise + 1 (the given literal)
-def generateGFCNFLiteral(nVars, clauses, fsize, literal, outputFile):
+def generateGFCNFLiteral(nVars, clauses, fsize, literal):
     if fsize== 0:
         return
     bvsize = math.ceil(math.log2(nVars+1))
@@ -145,9 +148,21 @@ def generateGFCNFLiteral(nVars, clauses, fsize, literal, outputFile):
     newClauses = [[literal]] + generateNewClauses(nVars, fsize, bvsize)
     for i in range(fsize):
         newClauses.extend(neqClause(nVars + i*bvsize + 1, literal, bvsize))
-    writeClauses(outputFile, clauses + newClauses, nVars, fsize, bvsize)       
+    varList = [i for i in range(nVars + 1, nVars + fsize*bvsize + fsize +1)]
+    #writeClauses(outputFile, clauses + newClauses, nVars, fsize, bvsize)       
+    return varList,newClauses
 
-def runApproxmc(tmpCNF, epsilon, delta):
+def runApproxmc(varlist, clauses, newClauses, epsilon, delta):
+    c = pyapproxmc.Counter(seed=random.randint(1,10000), epsilon=epsilon, delta=delta)
+    for cl in clauses:
+        c.add_clause(cl)
+    for cl in newClauses:
+        c.add_clause(cl)
+    count = c.count(varlist)
+    return count[0]* (2**count[1])
+
+#old version with binary approxmc
+def runApproxmc_old(tmpCNF, epsilon, delta):
     approxOutput='out.pmc'
     try:
         cmd = 'approxmc --seed ' + str(random.randint(1,10000)) + ' --epsilon ' + str(epsilon) + ' --delta ' + str(delta) + ' ' + tmpCNF + ' >' + approxOutput  
@@ -166,23 +181,23 @@ def runApproxmc(tmpCNF, epsilon, delta):
         sys.exit(1)
 
 # Computes the approximate number of combinations
-def approxComb(nVars, clauses, twise, tmpCNF, epsilon, delta):
-    generateGFCNF(nVars, clauses, twise, tmpCNF)
-    result = runApproxmc(tmpCNF, epsilon, delta)
-    utils.rmfile(tmpCNF)
+def approxComb(nVars, clauses, twise, epsilon, delta):
+    varList,newClauses = generateGFCNF(nVars, clauses, twise)
+    result = runApproxmc(varList, clauses, newClauses, epsilon, delta)
+    #utils.rmfile(tmpCNF)
     return result
     
 # Computes the approximate number of combinations for each literal
-def approxCombLiteral(nVars, clauses, twise, outputfile, tmpCNF, epsilon, delta):
+def approxCombLiteral(nVars, clauses, twise, outputfile, epsilon, delta):
     res = {}
     curPerc = 0.0
     for i in range(1, nVars+1):
         clausesTmp = clauses[:]
-        generateGFCNFLiteral(nVars, clausesTmp, twise-1, i, tmpCNF)
-        res[i] = runApproxmc(tmpCNF, epsilon, delta)
+        varList,newClauses = generateGFCNFLiteral(nVars, clausesTmp, twise-1, i)
+        res[i] = runApproxmc(varList, clauses, newClauses, epsilon, delta)
         clausesTmp = clauses[:]
-        generateGFCNFLiteral(nVars, clausesTmp, twise-1, -i, tmpCNF)
-        res[-i] = runApproxmc(tmpCNF, epsilon, delta)
+        varList,newClauses = generateGFCNFLiteral(nVars, clausesTmp, twise-1, -i)
+        res[-i] = runApproxmc(varList, clauses, newClauses, epsilon, delta)
         if i / nVars > curPerc + 0.05:
             curPerc += 0.05
             print(str(round(100 * curPerc)) + "% done")
@@ -190,7 +205,7 @@ def approxCombLiteral(nVars, clauses, twise, outputfile, tmpCNF, epsilon, delta)
         f.write(str(twise)+ '\n')
         for key in res.keys():
             f.write(str(key) + ' ' + str(res[key]) + '\n')
-    utils.rmfile(tmpCNF)
+    #utils.rmfile(tmpCNF)
     return res
     
 #-----------------------------------------------------------------------------------------------------
@@ -200,12 +215,12 @@ def run(dimacscnf, twise, mode, outputdir, epsilon, delta):
     benchmarkName = os.path.basename(dimacscnf).split('.')[0]
     if mode == 2:
         start_full = time.time()
-        res = approxComb(nVars, clauses, twise, benchmarkName + TMPCNFSUFFIX, epsilon, delta)
+        res = approxComb(nVars, clauses, twise, epsilon, delta)
         print("Approximate number of combinations is " + str(res))
         print("Total time: " + str(time.time() - start_full))
     elif mode == 3:
         start_full = time.time()
-        res = approxCombLiteral(nVars, clauses, twise, os.path.join(outputdir,  benchmarkName + '_' + str(twise) + '.acomb'), benchmarkName + TMPCNFSUFFIX, epsilon, delta)
+        res = approxCombLiteral(nVars, clauses, twise, os.path.join(outputdir,  benchmarkName + '_' + str(twise) + '.acomb'), epsilon, delta)
         print("Total time: " + str(time.time() - start_full))
     elif mode == 1:
         combs = []   
