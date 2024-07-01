@@ -12,15 +12,25 @@
 3.4 cp ./d4 <path/to/baital>/bin/  
 3.5 chmod +x <path/to/baital>/bin/d4  
 
-3*. (Optional) It is possible to use a different version of [d4](https://github.com/crillab/d4v2)  
-3*.1 Install `ninja-build`:  
+### D4V2
+It is possible to use a never version of d4. Step 3 can be replaced with the following:  
+4. (Optional) Install a different version of [d4](https://github.com/crillab/d4v2)  
+4.1 Install `ninja-build`:  
     - On Debian-based systems the command is `sudo apt install ninja-build`  
-3*.2 git clone https://github.com/crillab/d4v2  
-3*.3 Due to missing file in d4v2, download patoh distribution from http://cc.gatech.edu/~umit/software.html and copy files to d4v2/3rdParty/patoh/  
-3*.4 cd d4v2
-3*.5 ./build.sh
-3.4 cp build/d4 <path/to/baital>/bin/  
-3.5 chmod +x <path/to/baital>/bin/d4  
-3.6 in <path/to/baital>/src/waps_upd.py  
+4.2 git clone https://github.com/crillab/d4v2  
+4.3 Due to missing file in d4v2, download patoh distribution from http://cc.gatech.edu/~umit/software.html and copy files to d4v2/3rdParty/patoh/  
+4.4 cd d4v2  
+4.5 ./build.sh  
+4.6 cp build/d4 <path/to/baital>/bin/  
+4.7 chmod +x <path/to/baital>/bin/d4  
+4.8 in <path/to/baital>/src/waps_upd.py  
     - Comment line 605 (cmd = "/usr/bin/time -o "+ "/tmp/" + inputFile.split("/")[-1]+".timeout "+ "--verbose ../bin/d4 /tmp/" + inputFile.split("/")[-1] + ".tmp " + " -dDNNF -out=" + dDNNF + ' ' + setSeed)  
     - Uncomment line 604 (cmd = "/usr/bin/time -o "+ "/tmp/" + inputFile.split("/")[-1]+".timeout "+ "--verbose ../bin/d4 -i /tmp/" + inputFile.split("/")[-1] + ".tmp " + "-m ddnnf-compiler --dump-ddnnf " + dDNNF + ' ' + setSeed)  
+    
+From a few tests we haven't noticed a significant difference in overall performance in comparison with the original version of d4: d4 is called a single time during the execution and its share of overall time consumption is not big.  
+
+## Quick Test
+
+For a quick test of the installation, run `python3 test.py` from `src` folder.   
+If d4 is installed, additionally run `python3 test_d4.py`.  
+All tests are expected to pass.  

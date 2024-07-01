@@ -77,7 +77,8 @@ def normalizeWeights(weights):
 def fetchWeights(weightFile):
     '''either specify all positive literal weights between 0 and 1 or
     specify weights for both positive and negative literals.'''
-    data = open(weightFile).read()
+    with open(weightFile) as f:
+        data = f.read()
     lines = data.strip().split("\n")
     weights = {}
     for line in lines:
