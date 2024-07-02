@@ -15,7 +15,7 @@ Tested on: Ubuntu, Debian, and CentOS.
 
 Detailed instructions can be found in Install.md.  
 
-1. Install libraries required by additional tools: `build-essential` `cmake` `graphviz` `libgmp-dev` `libmpfr-dev` `libmpc-dev` `zlib1g-dev` `libboost-program-options-dev` `libboost-serialization-dev` `libgmp3-dev` `z3`.  
+1. Install libraries required by additional tools: `build-essential` `cmake` `graphviz` `libgmp-dev` `libmpfr-dev` `libmpc-dev` `zlib1g-dev` `libboost-program-options-dev` `libboost-serialization-dev` `z3`.  
     - `sudo apt install` on Debian-based systems 
 2. Install additional python libraries.  
     - `pip3 install -r requirements.txt`  
@@ -26,9 +26,9 @@ Detailed instructions can be found in Install.md.
 An alternative for installation is to build a docker image with:  
 `docker build ./ -t baital`  
   
-In order to perform sampling using docker, container inputs and outputs has to be passed via volumes. The run command shall be:  
-`docker run -v /path/to/inputfile:/baital/src/inputfile -v /path/to/output/results/:/baital/src/results/ baital baital.py inputfile`  
-Other arguments can be passed as usual; note that all files in the arguments must be injected with volumes.   
+In order to perform sampling using docker, container inputs and outputs has to be passed via volumes. The run command shall be similar to:  
+`docker run --mount type=bind,source="$(pwd)"/src/test.cnf,target=/baital/src/test.cnf --mount type=bind,source="$(pwd)"/src/results/,target=/baital/src/results/ baital baital.py test.cnf`
+Other arguments can be passed as usual; note that all files in the arguments must be injected with volumes. In the command above, the first mount binds the test.cnf file and the second mount binds the results folder. If `--outputdir` is used for Baital, the second mount target shall be modified accordingly. For `--preprocess-file`, the file should either be placed in "$(pwd)"/src/results/ folder (or alternative monted folder) or be mounted separately.   
 
 
 ## Benchmarks

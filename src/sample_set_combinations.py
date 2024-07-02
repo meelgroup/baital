@@ -61,7 +61,7 @@ def run(samples, twise, isApprox, epsilon, delta):
         res = approximate_coverage(samples, twise, epsilon, delta)
     else:
         res = check_coverage(samples, twise)
-    print("Time taken: " + str(time.time() - start))
+    print("Time taken for combination counting: " + str(time.time() - start))
     return res
 
 

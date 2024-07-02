@@ -229,7 +229,7 @@ def run(dimacscnf, twise, mode, outputdir, epsilon, delta):
             print("Generating " + str(i+1) + "-wise combinations")
             combs.append(get_combinations(nVars, clauses, i+1, os.path.join(outputdir, benchmarkName + '_' + str(i+1) + '.comb'), combs))
         res = len(combs[-1])
-        print("Number of combinations is " + str(len(combs[-1])))
+        print("Total number of combinations is " + str(len(combs[-1])))
         print("Total time: " + str(time.time() - start_full))
     else:
         print("Unsupproted mode")
