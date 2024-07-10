@@ -27,8 +27,11 @@ An alternative for installation is to build a docker image with:
 `docker build ./ -t baital`  
   
 In order to perform sampling using docker, container inputs and outputs has to be passed via volumes. The run command shall be similar to:  
-`docker run --mount type=bind,source="$(pwd)"/src/test.cnf,target=/baital/src/test.cnf --mount type=bind,source="$(pwd)"/src/results/,target=/baital/src/results/ baital baital.py test.cnf`
-Other arguments can be passed as usual; note that all files in the arguments must be injected with volumes. In the command above, the first mount binds the test.cnf file and the second mount binds the results folder. If `--outputdir` is used for Baital, the second mount target shall be modified accordingly. For `--preprocess-file`, the file should either be placed in "$(pwd)"/src/results/ folder (or alternative monted folder) or be mounted separately.   
+```
+docker run --mount type=bind,source=/path/to/test.cnf,target=/baital/src/test.cnf \
+    --mount type=bind,source=/path/to/results/,target=/baital/src/results/ baital baital.py test.cnf
+```  
+Note that docker requires absolute paths for binding. There must be at least two bindings: an inputfile (or a folder on the path to inputfile, but in this case the remaining part of the path must be included in baital.py argument) and a folder where the results would be generated. Other arguments can be passed as usual; note that all files in the arguments must be injected with volumes. In the command above, the first mount binds the test.cnf file and the second mount binds the results folder. If `--outputdir` is used for Baital, the second mount target shall be modified accordingly. For `--preprocess-file`, the file should either be placed in /path/to/results/ folder (or alternative monted folder) or be mounted separately.   
 
 
 ## Benchmarks
