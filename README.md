@@ -154,6 +154,12 @@ Preprocessing step could take large time depending on the type of preprocessing,
 For large benchmarks and `twise >=3` approximate methods shall be used: for preprocessing --preprocess-approximate option; for sampling - strategies 3, 4, or 5; for computation of coverage --cov-approximate.
 
 
+## Evaluation
+
+Evaluation results for Baital with WAPS engine have been published at [DOI](https://doi.org/10.1145/3368089.3409744) (Note that Strategy 4 in the paper is Strategy 5 in the current version of Baital). Evaluation results for the approximation algorithms have been published at [DOI](https://doi.org/10.1145/3510003.3510218). Evaluation results for Strategy 3 and for CMSGen engine have been published at [DOI](https://ieeexplore.ieee.org/document/10575923).  
+
+Evaluation results and options used for their generation are in the [repository](https://github.com/edbaranov/feature-model-benchmarks).
+
 ### Citing Us
 
 If you use our tool, please cite us with the following bibtex:
